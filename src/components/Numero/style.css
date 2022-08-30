@@ -1,0 +1,14 @@
+.fibparent {
+    margin: 0;
+    border: 1px solid #fff;
+}
+
+.fibinline {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.fibblock {
+    display: block;
+    text-align: center;
+}

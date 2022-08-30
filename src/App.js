@@ -1,13 +1,8 @@
 import logo from './logo.svg';
 import './App.css';
-import Fibonacci from './Numero';
+import Fibonacci from './components/Numero/Index';
 
 function App() {
-
-  let rows = [];
-  for (let i = 0; i < 20; i++) {
-    rows.push(<Fibonacci n={i}></Fibonacci>);
-  }
 
   return (
     <div className="App">
@@ -18,7 +13,7 @@ function App() {
         </h1>
         <p>Sequência de fibonacci:</p>
         <div>
-        {rows}
+        <Fibonacci n="9"></Fibonacci>
         </div>
       </header>
     </div>
