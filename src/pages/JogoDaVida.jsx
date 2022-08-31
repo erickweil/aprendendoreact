@@ -3,7 +3,7 @@ import {useEffect, useState} from 'react';
 import LifeCell from "../components/LifeCell/LifeCell";
 
 const JogoDaVida = () => {
-    const count = 32;
+    const count = 24;
 
     const [grade, setGrade] = useState(
         {g:Array(count).fill(null).map(() => Array(count).fill(0))}
@@ -74,7 +74,7 @@ const JogoDaVida = () => {
         <div className="App">
             <header className="App-header">
                 <h2>Jogo da Vida</h2>
-                <button className="App-button" onClick={execjogo}>+</button>
+                <button className="App-button" onClick={execjogo}>&#9654;</button>
         
                 <table className="celltable">
                     {rows}

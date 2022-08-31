@@ -14,17 +14,7 @@
 }
 
 
-.App-button {
-  background: #282c34;
-  color: white;
-  font-size: 1.2em;
-  margin: 10px;
-  display:inline;
-	border:1px solid #ddd;
-	border-radius:21px;
-  width: 42px;
-  height: 42px;
-}
+
 
 @keyframes App-logo-spin {
   from {
