@@ -1,0 +1,20 @@
+.celltable {
+    
+    border-collapse: collapse;
+}
+.cell, .cellrow, .celltable {
+    margin: 0;
+    padding: 0;
+    border: 1px solid #444;
+}
+
+.cell {
+    font-size: small;
+    width: 32px;
+    height: 32px;
+    background-color: #000;
+}
+
+.cell.vivo {
+    background-color: #0F0;
+}
