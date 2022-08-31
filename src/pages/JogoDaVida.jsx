@@ -1,18 +1,21 @@
 import "./JogoDaVida.css";
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import LifeCell from "../components/LifeCell/LifeCell";
 
 const JogoDaVida = () => {
     const count = 24;
 
     const [grade, setGrade] = useState(
-        {g:Array(count).fill(null).map(() => Array(count).fill(0))}
+        {
+            g:Array(count).fill(null).map(() => Array(count).fill(0)),
+            exec:false
+        }
     );
 
     const toggleCell = (x,y) => {
         grade.g[y][x] = grade.g[y][x] == 0 ? 1 : 0;
 
-        setGrade({g:grade.g});
+        setGrade({g:grade.g,exec:grade.exec});
     };
 
     const rows = [];
@@ -36,8 +39,10 @@ const JogoDaVida = () => {
         celltable.push(columns);
     }
 
+    const gradeRef = useRef(grade);
+    gradeRef.current = grade;
     const execjogo = () => {
-        let g = grade.g;
+        let g = gradeRef.current.g;
         let gnext = Array(count).fill(null).map(() => Array(count).fill(0));
 
         for(let y = 1;y<=count;y++)
@@ -67,14 +72,26 @@ const JogoDaVida = () => {
             }
         }
 
-        setGrade({g:gnext});
+        setGrade({g:gnext,exec:true});
     };
+
+    const toogleJogo = () => {
+        setGrade({g:grade.g,exec:!grade.exec});
+    }
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if(gradeRef.current.exec)
+                execjogo();
+        }, 100);
+        return () => clearInterval(timer);
+    }, []);
 
     return (
         <div className="App">
             <header className="App-header">
                 <h2>Jogo da Vida</h2>
-                <button className="App-button" onClick={execjogo}>&#9654;</button>
+                <button className="App-button" onClick={toogleJogo}>{grade.exec?"Parar":"Executar"}</button>
         
                 <table className="celltable">
                     {rows}
