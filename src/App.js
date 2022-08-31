@@ -13,7 +13,7 @@ function App() {
         </h1>
         <p>Sequência de fibonacci:</p>
         <div>
-        <Fibonacci n="9"></Fibonacci>
+        <Fibonacci n="10"></Fibonacci>
         </div>
       </header>
     </div>
