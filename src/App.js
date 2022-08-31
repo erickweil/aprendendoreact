@@ -12,8 +12,8 @@ function App() {
           APRENDENDO REACT
         </h1>
         <p>Sequência de fibonacci:</p>
-        <div>
-        <Fibonacci n="9"></Fibonacci>
+        <div style={{border:"1px solid #fff"}}>
+        <Fibonacci n="5"></Fibonacci>
         </div>
       </header>
     </div>

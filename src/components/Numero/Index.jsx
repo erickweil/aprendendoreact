@@ -10,7 +10,8 @@ function Fibonacci(props) {
     let n = parseInt(props.n);
     let qual = n % 4;
     let fibn = fib(n);
-    let estilo = {width: fibn+"rem",height: fibn+"rem", lineHeight:fibn+"rem"}
+    let scale = 30;
+    let estilo = {width: (fibn*scale)+"px",height: (fibn*scale)+"px", lineHeight:(fibn*scale)+"px"}
     if(n == 0) return (
       <div className="fibblock" style={estilo}>{fibn}</div>
     );
@@ -19,7 +20,7 @@ function Fibonacci(props) {
     {
       return (
         <div className="fibparent">
-          <div className="fibblock" style={estilo}>{fibn}</div>
+          <div className="fibblock borderD" style={estilo}>{fibn}</div>
           <div className="fibblock"><Fibonacci n={""+(n-1)}></Fibonacci></div>
         </div>
       );
@@ -29,7 +30,7 @@ function Fibonacci(props) {
       return (
         <div className="fibparent">
           <div className="fibinline"><Fibonacci n={""+(n-1)}></Fibonacci></div>
-          <div className="fibinline" style={estilo}>{fibn}</div>
+          <div className="fibinline borderL" style={estilo}>{fibn}</div>
         </div>
       );
     }
@@ -38,7 +39,7 @@ function Fibonacci(props) {
       return (
         <div className="fibparent">
           <div className="fibblock"><Fibonacci n={""+(n-1)}></Fibonacci></div>
-          <div className="fibblock" style={estilo}>{fibn}</div>
+          <div className="fibblock borderU" style={estilo}>{fibn}</div>
         </div>
       );
     }
@@ -46,7 +47,7 @@ function Fibonacci(props) {
     {
       return (
         <div className="fibparent">
-          <div className="fibinline" style={estilo}>{fibn}</div>
+          <div className="fibinline borderR" style={estilo}>{fibn}</div>
           <div className="fibinline"><Fibonacci n={""+(n-1)}></Fibonacci></div>
         </div>
       );

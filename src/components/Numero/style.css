@@ -1,14 +1,40 @@
 .fibparent {
     margin: 0;
-    border: 1px solid #fff;
+    padding: 0;
 }
 
 .fibinline {
+    margin: 0;
+    padding: 0;
     display: inline-block;
     vertical-align: middle;
 }
 
 .fibblock {
+    margin: 0;
+    padding: 0;
     display: block;
     text-align: center;
+}
+
+.borderD, .borderL, .borderR, .borderU {
+    -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+    -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+    box-sizing: border-box;         /* Opera/IE 8+ */
+}
+
+.borderL {
+    border-left: 1px solid #fff;
+}
+
+.borderR {
+    border-right: 1px solid #fff;
+}
+
+.borderU {
+    border-top: 1px solid #fff;
+}
+
+.borderD {
+    border-bottom: 1px solid #fff;
 }
