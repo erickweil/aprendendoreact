@@ -1,8 +1,29 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Layout from "./pages/Layout";
+import JogoDaVida from "./pages/JogoDaVida";
+import Fibonacci from "./pages/Fibonacci";
+import Inicio from "./pages/Inicio";
+import Ops from "./pages/Ops";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Inicio />} />
+          <Route path="fibonacci" element={<Fibonacci />} />
+          <Route path="jogodavida" element={<JogoDaVida />} />
+          <Route path="*" element={<Ops />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
