@@ -9,7 +9,7 @@ import LifeCell from "../LifeCell/LifeCell";
 function LifeTable(props) {
 
     // Cria um Array de Arrays
-    const getNovaGrade = (n) => {
+    const criarNovaGrade = (n) => {
         //console.log("Criando nova grade "+n);
         return Array(count).fill(null).map(() => Array(count).fill(0));
     };
@@ -22,7 +22,7 @@ function LifeTable(props) {
     const [grade, setGrade] = useState(
         {
             // cria a grade, um array de arrays com countXcount de tamanho
-            g:getNovaGrade(count)
+            g:criarNovaGrade(count)
         }
     );
 
@@ -40,9 +40,13 @@ function LifeTable(props) {
 
         // É necessário criar uma grade vazia para receber
         // os novos valores de cada célula
-        let gnext = getNovaGrade(count);
+        let gnext = criarNovaGrade(count);
 
-        // Dois for atravessam a grade
+        // Dois laços for atravessam a grade
+        // começa em 1 e vai até o count
+        // como está usando % count para calcular o índice, o que acontece
+        // é que mesmo que o valor passe do tamanho do array ele volta para
+        // o início, e como começa em 1, ao calcular os vizinhos nunca dá negativo
         for(let y = 1;y<=count;y++)
         {
             for(let x = 1;x<=count;x++)
@@ -85,18 +89,22 @@ function LifeTable(props) {
         // Atualiza o estado da grade
         setGrade({g:gnext});
     };
-
-   
     
     // Timer para executar a cada 100ms
     const estadoRef = useRef({exec:exec,grade:grade}); // para funcionar no timer
     estadoRef.current = {exec:exec,grade:grade};
 
+    // Executa dentro do UseEffect porque mesmo? estava assim no exemplo
     useEffect(() => {
+
+        // Cria o timer que irá repetir a cada 100ms
         const timer = setInterval(() => {
             if(estadoRef.current.exec)
                 execjogo(estadoRef.current.grade);
         }, 100);
+
+        // Retorna a função que será executada ao des-montar o componente
+        // desta forma irá parar a repetição do timer
         return () => clearInterval(timer);
     }, []);
 
