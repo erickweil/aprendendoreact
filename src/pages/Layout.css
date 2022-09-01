@@ -21,6 +21,21 @@
     width: 60px;
     height: 60px;
   }
+
+
+  .App-textbutton {
+    background: #282c34;
+    color: white;
+    font-size: 1.0em;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 30px;
+    padding-right: 30px;
+    display:inline;
+      border:1px solid #ddd;
+      border-radius:60px;
+
+  }
 /*
 
 ############# Barra Topo ###########

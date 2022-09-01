@@ -1,6 +1,3 @@
-
-import {useEffect, useState} from 'react';
-
 function LifeCell(props) {
 
     let classe;
@@ -10,7 +7,10 @@ function LifeCell(props) {
     else
         classe= "cell vivo";
         
-    return <td className={classe} onClick={() => props.toggleCell(props.x,props.y)}></td>;
+    return <td 
+    className={classe} 
+    onMouseEnter={(event) => {if(event.buttons)props.toggleCell(props.x,props.y)} }
+    onClick={() => props.toggleCell(props.x,props.y)}></td>;
 }
 
 export default LifeCell;
