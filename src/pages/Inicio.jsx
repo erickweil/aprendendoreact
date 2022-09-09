@@ -1,5 +1,6 @@
+import LayoutTituloConteudo from "../components/Coisas/LayoutTituloConteudo";
 const Inicio = () => {
-    return <h1>Início.</h1>;
+    return <LayoutTituloConteudo  titulo="Início" />;
 };
   
 export default Inicio;

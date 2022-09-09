@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./pages/Layout";
 import JogoDaVida from "./pages/JogoDaVida";
 import Fibonacci from "./pages/Fibonacci";
+import Paginacao from './pages/Paginacao';
+import Formulario from './pages/Formulario';
 import Inicio from "./pages/Inicio";
 import Ops from "./pages/Ops";
 
@@ -18,6 +20,8 @@ export default function App() {
           <Route index element={<Inicio />} />
           <Route path="fibonacci" element={<Fibonacci />} />
           <Route path="jogodavida" element={<JogoDaVida />} />
+          <Route path="paginacao" element={<Paginacao />} />
+          <Route path="formulario" element={<Formulario />} />
           <Route path="*" element={<Ops />} />
         </Route>
       </Routes>

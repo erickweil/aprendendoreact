@@ -1,5 +1,7 @@
+import LayoutTituloConteudo from "../components/Coisas/LayoutTituloConteudo";
+
 const Ops = () => {
-    return <h1>Ops, Página Não encontrada.</h1>;
-  };
+    return <LayoutTituloConteudo  titulo="Ops, Página Não encontrada" />;
+};
   
 export default Ops;

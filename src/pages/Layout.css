@@ -22,6 +22,19 @@
     height: 60px;
   }
 
+  .App-button.highlight {
+    background: white;
+    color: #282c34;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 10px;
+    display:inline;
+      border:1px solid #282c34;
+      border-radius:30px;
+    width: 60px;
+    height: 60px;
+  }
+
 
   .App-textbutton {
     background: #282c34;
@@ -45,11 +58,11 @@ nav.topo {
     display: flex;
 }
 
-.right{
+ul.topo .right{
     float:right;
 }
 
-.left{
+ul.topo .left{
     float:left;
 }
 
@@ -91,3 +104,49 @@ ul.topo li.col a{
 ul.topo li.col a:hover{
     background-color: #0F0E0D;
 }
+
+/*
+####################### Alinhamentos diversos
+*/
+
+.rowContainer {
+  display: block;
+}
+
+.rowContainer.center {
+  text-align: center;
+}
+
+.rowContainer.left {
+  align-items: flex-start;
+}
+
+.colContainer {
+  display: block;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.colContainer > * {
+  display: inline-block;
+}
+
+.colContainer.right {
+  text-align: right;
+}
+
+.colContainer.left {
+  text-align: left;
+}
+
+.card {
+  text-align: start;
+}
+
+.card > p{
+  display: inline-block;
+  vertical-align: middle;
+}
+
+
+

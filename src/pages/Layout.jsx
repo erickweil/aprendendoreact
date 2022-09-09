@@ -15,6 +15,12 @@ const Layout = () => {
           <li className="col right">
             <Link to="/jogodavida">Jogo Da Vida</Link>
           </li>
+          <li className="col right">
+            <Link to="/paginacao">Paginação</Link>
+          </li>
+          <li className="col right">
+            <Link to="/formulario">Formulário</Link>
+          </li>
         </ul>
       </nav>
 
