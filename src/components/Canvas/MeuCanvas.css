@@ -1,3 +1,10 @@
+html{
+    height:100%; 
+    width:100%; 
+    overflow: hidden;/* Para que a página n tenha scroll e atrapalhe o canvas*/
+    
+}
+
 body{
     height: 100vh;
     width: 100%;

@@ -10,6 +10,26 @@ function referenceSafeRemove(array,index)
 	array.pop();
 }
 
+function touchToButton(nTouches)
+{
+	if(nTouches == 0) return -1; // Invalid
+	else if(nTouches == 1) return 0; // Left Mouse button
+	else if(nTouches == 2) return 2; // Right Mouse button
+	else if(nTouches == 3) return 1; // Middle Mouse button
+	else return nTouches; // ?
+}
+
+function touchToButtons(nTouches)
+{
+	if(nTouches == 0) return 0; // None
+	else if(nTouches == 1) return 1; // Left Mouse button
+	else if(nTouches == 2) return 2; // Right Mouse button
+	else if(nTouches == 3) return 4; // Middle Mouse button
+	else if(nTouches == 4) return 1+2; // Left and Right
+	else if(nTouches == 5) return 1+2+4; // Left and Right and Middle
+	else return 8;
+}
+
 export function normalizeWheel(/*object*/ event) /*object*/ {
 	// Reasonable defaults
 	var PIXEL_STEP  = 10;
@@ -149,7 +169,7 @@ export default class TouchManager {
 		if(!this.touchDownIssued)
 		{
 			if(this.events["onTouchDown"])
-			this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
+			this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
 			this.touchDownIssued = true;
 			this.touchDownDistance = this.getFingerDistance();
 		}
@@ -169,7 +189,7 @@ export default class TouchManager {
 			if(this.numTouches <= this.touches.length)
 			{
 				if(this.events["onTouchMove"])
-				this.events["onTouchMove"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
+				this.events["onTouchMove"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
 			}
 		}
 	}
@@ -192,12 +212,12 @@ export default class TouchManager {
 			if(!this.touchDownIssued)
 			{
 				if(this.events["onTouchDown"])
-				this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
+				this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
 				this.touchDownIssued = true;
 			}
 			
 			if(this.events["onTouchUp"])
-			this.events["onTouchUp"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
+			this.events["onTouchUp"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
 			this.numTouches=0;
 		}
 			

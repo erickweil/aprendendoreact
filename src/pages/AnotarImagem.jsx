@@ -15,7 +15,13 @@ const AnotarImagem = () => {
 
         if(estado.mouse)
         {
-            ctx.fillStyle = '#ff00ff';
+            if(estado.mouse.left)
+            ctx.fillStyle = '#ff0000';
+            if(estado.mouse.middle)
+            ctx.fillStyle = '#00ff00';
+            if(estado.mouse.right)
+            ctx.fillStyle = '#0000ff';
+            
             ctx.fillRect(estado.mouse.x,estado.mouse.y,b,b);
         }
 
