@@ -10,15 +10,19 @@ function referenceSafeRemove(array,index)
 	array.pop();
 }
 
+// https://www.w3schools.com/jsref/event_button.asp
 function touchToButton(nTouches)
 {
 	if(nTouches == 0) return -1; // Invalid
 	else if(nTouches == 1) return 0; // Left Mouse button
 	else if(nTouches == 2) return 2; // Right Mouse button
 	else if(nTouches == 3) return 1; // Middle Mouse button
+	else if(nTouches == 4) return 0; // Left and Right
+	else if(nTouches == 5) return 0; // Left and Right and Middle
 	else return nTouches; // ?
 }
 
+// https://www.w3schools.com/jsref/event_buttons.asp
 function touchToButtons(nTouches)
 {
 	if(nTouches == 0) return 0; // None
@@ -86,6 +90,28 @@ export default class TouchManager {
 		this.numTouches = 0;
 		this.touchDownIssued = false;
 		this.touchDownDistance = 0;
+	}
+
+	fireEvent(eventName,touchPos,...args)
+	{
+		if(!this.events[eventName]) return;
+
+		var fake_e = {
+			// are those the same?
+			pageX:touchPos.x,
+			pageY:touchPos.y,
+			clientX:touchPos.x,
+			clientY:touchPos.y,
+			screenX:touchPos.x,
+			screenY:touchPos.y,
+			button:touchToButton(this.numTouches),
+			buttons:touchToButtons(this.numTouches)
+
+			// relatedTarget
+			// altKey, crtlKey, shiftKey, metaKey, getModifierState(key)
+		};
+
+		this.events[eventName](fake_e,...args);
 	}
 	
 	getTouchByID(id)
@@ -168,8 +194,7 @@ export default class TouchManager {
 		
 		if(!this.touchDownIssued)
 		{
-			if(this.events["onTouchDown"])
-			this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
+			this.fireEvent("onTouchDown",touchPos,...args);
 			this.touchDownIssued = true;
 			this.touchDownDistance = this.getFingerDistance();
 		}
@@ -188,8 +213,7 @@ export default class TouchManager {
 			
 			if(this.numTouches <= this.touches.length)
 			{
-				if(this.events["onTouchMove"])
-				this.events["onTouchMove"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
+				this.fireEvent("onTouchMove",touchPos,...args);
 			}
 		}
 	}
@@ -211,13 +235,13 @@ export default class TouchManager {
 		{
 			if(!this.touchDownIssued)
 			{
-				if(this.events["onTouchDown"])
-				this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
+				this.fireEvent("onTouchDown",touchPos,...args);
+				
 				this.touchDownIssued = true;
 			}
 			
-			if(this.events["onTouchUp"])
-			this.events["onTouchUp"]({pageX:touchPos.x,pageY:touchPos.y,button:touchToButton(this.numTouches),buttons:touchToButtons(this.numTouches)},...args);
+			this.fireEvent("onTouchUp",touchPos,...args);
+
 			this.numTouches=0;
 		}
 			
