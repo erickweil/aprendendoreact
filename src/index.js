@@ -9,6 +9,7 @@ import JogoDaVida from "./pages/JogoDaVida";
 import Fibonacci from "./pages/Fibonacci";
 import Paginacao from './pages/Paginacao';
 import Formulario from './pages/Formulario';
+import AnotarImagem from './pages/AnotarImagem';
 import Inicio from "./pages/Inicio";
 import Ops from "./pages/Ops";
 
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="jogodavida" element={<JogoDaVida />} />
           <Route path="paginacao" element={<Paginacao />} />
           <Route path="formulario" element={<Formulario />} />
+          <Route path="anotarimagem" element={<AnotarImagem />} />
           <Route path="*" element={<Ops />} />
         </Route>
       </Routes>

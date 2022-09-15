@@ -1,0 +1,16 @@
+body{
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    cursor: default;
+}
+
+#root{
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+}
+
+#canvasInAPerfectWorld{
+    flex: 1 1 auto;
+}
