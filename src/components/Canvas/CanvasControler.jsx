@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react'
-import TouchManager from './TouchManager';
+import { useRef, useState, useEffect } from 'react'
+//import TouchManager from './TouchManager';
 /*
 https://www.pluralsight.com/guides/re-render-react-component-on-window-resize
 Currently, our example code is set up to call handleResize as often
@@ -30,18 +30,21 @@ https://medium.com/@pdx.lucasm/canvas-with-react-js-32e133c05258
 
 Canvas Controler, handles resizing and animationframe callbacks
 */
-const CanvasControler = (draw, options={}) => {
+const CanvasControler = (draw,getInitialState, options={}) => {
   
-  const canvasRef = useRef(null);
   
+  const [estado,setEstado] = useState(null);
+  if(!estado) setEstado(getInitialState());
+
+  const canvasRef = useRef({canvas:null,estado:estado});
+  canvasRef.current.estado = estado;
+
   useEffect(() => {
-    
-    const canvas = canvasRef.current;
-    const context = canvas.getContext(options.context || '2d');
-    let canvasInfo = {
-      frameCount:0,
-      mouse:{x:0,y:0}
-    };
+  
+    console.log("CRIOU O CANVAS")
+    const canvas = canvasRef.current.canvas;
+    const context = canvas.getContext((options && options.context) || '2d');
+    let frameCount = 0;
     // Timer
     let animationFrameId;
 
@@ -60,45 +63,12 @@ const CanvasControler = (draw, options={}) => {
     const debounceHandleResize = debounce(doResize,100);
     window.addEventListener("resize", debounceHandleResize);
 
-    const mousedown = (e) => {};
-    const mousemove = (e) => {
-      canvasInfo.mouse = {x:e.pageX - canvas.offsetLeft,y:e.pageY- canvas.offsetTop};
-    };
-    const mouseup = (e) => {};
-    const mousewheel = (e) => {};
-    const dozoom = (p,zoomDelta) => {};
-
-    // Listeners
-    
-    canvas.addEventListener("mousedown",(e) => mousedown(e));
-		canvas.addEventListener("mousemove",(e) => mousemove(e));
-		canvas.addEventListener("contextmenu",(e) => mouseup(e));
-		canvas.addEventListener("mouseup",(e) => mouseup(e));
-		canvas.addEventListener("wheel",(e) => mousewheel(e));
-		
-    // O touch manager visa simplificar o manuseio de toques como se fosse cliques do mouse normal
-		const touchManager = new TouchManager();
-		canvas.addEventListener("touchstart",(e) => {touchManager.touchstart(e);}, false);
-		canvas.addEventListener("touchmove",(e) => {touchManager.touchmove(e);}, false);
-		canvas.addEventListener("touchend", (e) => {
-			e.preventDefault(); // prevent 300ms after a tap event?
-			touchManager.touchend(e);
-		}, false);
-		canvas.addEventListener("touchcancel",(e) => {touchManager.touchcancel(e);}, false);
-		canvas.addEventListener("touchleave",(e) => {touchManager.touchleave(e);}, false);
-		
-		touchManager.addEventListener("onTouchDown",(p,ntouches) => {mousedown({pageX:p.x,pageY:p.y,button:ntouches})}, false);
-		touchManager.addEventListener("onTouchMove",(p,ntouches) => {mousemove({pageX:p.x,pageY:p.y,button:ntouches})}, false);
-		touchManager.addEventListener("onTouchUp",(p,ntouches) => {mouseup({pageX:p.x,pageY:p.y,button:ntouches})}, false);
-		touchManager.addEventListener("onTouchZoom",(p,zoomDelta) => {dozoom(p,zoomDelta)}, false);
-				
-
     // Timer que se auto-registra recursivamente
     const render = () => {
 
       // Controle do desenho
-      canvasInfo.frameCount++;
-      draw(context, canvasInfo);
+      frameCount++;
+      draw(context,canvasRef.current.estado);
 
       // auto-registra novamente
       animationFrameId = window.requestAnimationFrame(render);
@@ -116,6 +86,6 @@ const CanvasControler = (draw, options={}) => {
     }
   }, [draw]);
   
-  return canvasRef;
+  return [estado,setEstado,canvasRef];
 }
 export default CanvasControler;

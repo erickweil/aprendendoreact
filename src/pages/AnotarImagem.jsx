@@ -1,27 +1,77 @@
-import Borda from "../components/Coisas/Borda";
-import LayoutTituloConteudo from "../components/Coisas/LayoutTituloConteudo";
-import MeuCanvas from "../components/Canvas/MeuCanvas";
+import ZoomableCanvas from "../components/Canvas/ZoomableCanvas";
 const AnotarImagem = () => {
 
-    const draw = (ctx, canvasInfo) => {
+    const mydraw = (ctx,estado) => {
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
-        ctx.clearRect(0, 0, w,h);
-        
+
         const b = 32
         ctx.fillStyle = '#0000ff';
         ctx.fillRect(0, 0, w, b);
         ctx.fillRect(0, h-b, w, b);
-
         ctx.fillStyle = '#00ff00';
         ctx.fillRect(0, 0, b, h);
         ctx.fillRect(w-b, 0, b, h);
 
-        ctx.fillRect(canvasInfo.mouse.x,canvasInfo.mouse.y,b,b);
-    }
+        if(estado.mouse)
+        {
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillRect(estado.mouse.x,estado.mouse.y,b,b);
+        }
+
+        if(estado.retangulos)
+        {
+            ctx.fillStyle = '#00ffff';
+            estado.retangulos.map(function (ret) {
+                ctx.fillRect(ret.x, ret.y, b, b);
+            });
+        }
+    };
+
+    const onMouseDown = (e,estado) =>
+    {
+
+    };
+
+    const onMouseMove = (e,estado) =>
+    {
+
+    };
+
+    const onMouseUp = (e,estado) =>
+    {
+
+    };
+
+    const onClick = (e,estado) =>
+    {
+        const ret = {x:estado.mouse.x,y:estado.mouse.y};
+
+        if(e.button == 2)
+        {
+            console.log(estado);
+            return {};
+        }
+        else if(e.button == 0)
+        {
+            return {
+                // Apesar de mesclar, filhos são substituídos, então é necessário mesclar aqui:
+                retangulos:[ret,...(estado.retangulos ? estado.retangulos : [])]
+            };
+        }
+    };
 
     return (
-        <MeuCanvas draw={draw} options={{}} />
+        <ZoomableCanvas
+        spanButton="right"
+        draw={mydraw}
+        events={{
+            onMouseDown:onMouseDown,
+            onMouseMove:onMouseMove,
+            onMouseUp:onMouseUp,
+            onClick:onClick
+        }}
+        />
     );
 };
   

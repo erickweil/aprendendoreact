@@ -10,6 +10,53 @@ function referenceSafeRemove(array,index)
 	array.pop();
 }
 
+export function normalizeWheel(/*object*/ event) /*object*/ {
+	// Reasonable defaults
+	var PIXEL_STEP  = 10;
+	var LINE_HEIGHT = 40;
+	var PAGE_HEIGHT = 800;
+
+	var sX = 0, sY = 0,       // spinX, spinY
+	  pX = 0, pY = 0;       // pixelX, pixelY
+
+	// Legacy
+	if ('detail'      in event) { sY = event.detail; }
+	if ('wheelDelta'  in event) { sY = -event.wheelDelta / 120; }
+	if ('wheelDeltaY' in event) { sY = -event.wheelDeltaY / 120; }
+	if ('wheelDeltaX' in event) { sX = -event.wheelDeltaX / 120; }
+
+	// side scrolling on FF with DOMMouseScroll
+	if ( 'axis' in event && event.axis === event.HORIZONTAL_AXIS ) {
+		sX = sY;
+		sY = 0;
+	}
+
+	pX = sX * PIXEL_STEP;
+	pY = sY * PIXEL_STEP;
+
+	if ('deltaY' in event) { pY = event.deltaY; }
+	if ('deltaX' in event) { pX = event.deltaX; }
+
+	if ((pX || pY) && event.deltaMode) {
+	if (event.deltaMode == 1) {          // delta in LINE units
+		pX *= LINE_HEIGHT;
+		pY *= LINE_HEIGHT;
+	} else {                             // delta in PAGE units
+		pX *= PAGE_HEIGHT;
+		pY *= PAGE_HEIGHT;
+	}
+	}
+
+	// Fall-back if spin cannot be determined
+	if (pX && !sX) { sX = (pX < 1) ? -1 : 1; }
+	if (pY && !sY) { sY = (pY < 1) ? -1 : 1; }
+
+	return { spinX  : sX,
+		   spinY  : sY,
+		   pixelX : pX,
+		   pixelY : pY };
+}
+
 export default class TouchManager {
 	constructor()
 	{
@@ -46,7 +93,7 @@ export default class TouchManager {
 		else return 1;
 	}
 	
-	touchstart(e)
+	touchstart(e,...args)
 	{
 		if(this.touches.length == 0)
 		{
@@ -81,11 +128,11 @@ export default class TouchManager {
 		{
 			this.numTouches= Math.max(this.numTouches,this.touches.length);
 		}
-		
+		// PORQUE?
 		//this.events["onTouchDown"](this.getCenterTouchPos(),this.touches);
 	}
 	
-	touchmove(e)
+	touchmove(e,...args)
 	{
 		for(var i=0;i<e.changedTouches.length;i++)
 		{
@@ -102,7 +149,7 @@ export default class TouchManager {
 		if(!this.touchDownIssued)
 		{
 			if(this.events["onTouchDown"])
-			this.events["onTouchDown"](touchPos,this.numTouches);
+			this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
 			this.touchDownIssued = true;
 			this.touchDownDistance = this.getFingerDistance();
 		}
@@ -114,7 +161,7 @@ export default class TouchManager {
 				if(zoomDelta)
 				{
 					if(this.events["onTouchZoom"])
-					this.events["onTouchZoom"](touchPos,zoomDelta);
+					this.events["onTouchZoom"]({pageX:touchPos.x,pageY:touchPos.y,delta:zoomDelta},...args);
 				}
 				this.touchDownDistance = this.getFingerDistance();
 			}
@@ -122,12 +169,12 @@ export default class TouchManager {
 			if(this.numTouches <= this.touches.length)
 			{
 				if(this.events["onTouchMove"])
-				this.events["onTouchMove"](touchPos,this.numTouches);
+				this.events["onTouchMove"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
 			}
 		}
 	}
 	
-	touchend(e)
+	touchend(e,...args)
 	{
 		var touchPos = this.getCenterTouchPos();
 		//var touchPos = this.touchDownPosition;
@@ -145,25 +192,25 @@ export default class TouchManager {
 			if(!this.touchDownIssued)
 			{
 				if(this.events["onTouchDown"])
-				this.events["onTouchDown"](touchPos,this.numTouches);
+				this.events["onTouchDown"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
 				this.touchDownIssued = true;
 			}
 			
 			if(this.events["onTouchUp"])
-			this.events["onTouchUp"](touchPos,this.numTouches);
+			this.events["onTouchUp"]({pageX:touchPos.x,pageY:touchPos.y,button:this.numTouches},...args);
 			this.numTouches=0;
 		}
 			
 	}
 	
-	touchcancel(e)
+	touchcancel(e,...args)
 	{
-		this.touchend(e);
+		this.touchend(e,...args);
 	}
 	
-	touchleave(e)
+	touchleave(e,...args)
 	{
-		this.touchend(e);
+		this.touchend(e,...args);
 	}
 	
 	getCenterTouchPos()
