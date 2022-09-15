@@ -1,8 +1,6 @@
 body{
-    height: 100%;
+    height: 100vh;
     width: 100%;
-    position: absolute;
-    cursor: default;
 }
 
 #root{
@@ -11,6 +9,7 @@ body{
     height: 100%;
 }
 
+
 #canvasInAPerfectWorld{
-    flex: 1 1 auto;
+    flex: 1;
 }

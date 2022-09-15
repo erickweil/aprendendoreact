@@ -47,12 +47,13 @@ function ItemAdapter(props) {
                     return (
                         <div className="item" key={k}>
                             {props.layout({item:item})}
+                            
                         </div>
                     );
                 })
         }
         </div>
-        <hr/>
+        
         <span className="colContainer right">
         {elementosPaginacao}
         </span>

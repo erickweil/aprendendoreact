@@ -3,14 +3,11 @@ import LayoutTituloConteudo from "../components/Coisas/LayoutTituloConteudo";
 import MeuCanvas from "../components/Canvas/MeuCanvas";
 const AnotarImagem = () => {
 
-    const draw = (ctx, frameCount) => {
+    const draw = (ctx, canvasInfo) => {
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
         ctx.clearRect(0, 0, w,h);
         
-        //ctx.beginPath()
-        //ctx.arc(50, 100, 20*Math.sin(frameCount*0.05)**2, 0, 2*Math.PI)
-        //ctx.fill()
         const b = 32
         ctx.fillStyle = '#0000ff';
         ctx.fillRect(0, 0, w, b);
@@ -19,18 +16,12 @@ const AnotarImagem = () => {
         ctx.fillStyle = '#00ff00';
         ctx.fillRect(0, 0, b, h);
         ctx.fillRect(w-b, 0, b, h);
+
+        ctx.fillRect(canvasInfo.mouse.x,canvasInfo.mouse.y,b,b);
     }
 
     return (
-        <>
-    {
-    //<LayoutTituloConteudo  titulo="Anotador de Imagens">
-    }
-            <MeuCanvas draw={draw} options={{}} />
-    {
-    //</LayoutTituloConteudo>
-    }
-        </>
+        <MeuCanvas draw={draw} options={{}} />
     );
 };
   

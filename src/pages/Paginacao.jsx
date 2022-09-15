@@ -44,8 +44,8 @@ const Paginacao = () => {
             <ItemAdapter 
                 getItems={getItems} 
                 layout={ItemParagrafo} 
-                maxPaginas={5} 
-                itemsPorPagina={8} 
+                maxPaginas={7} 
+                itemsPorPagina={20} 
             />
         </LayoutTituloConteudo>
     );
