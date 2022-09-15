@@ -43,10 +43,17 @@ const MeuCanvas = props => {
         mesclarEstado(_estado,novoEstado);
         setEstado({..._estado});
     };
+
+    let eventListeners = {};
+    for (const k in events) {
+        eventListeners[k] = (e) => { events[k] && doEvent(events[k],e); }
+    }
     
     return <canvas
+        tabIndex="0"
         id="canvasInAPerfectWorld" 
         ref={el => canvasRef.current.canvas = el}
+        {/*
         onMouseMove={(e) => { events.onMouseMove && doEvent(events.onMouseMove,e); }} 
         onMouseDown={(e) => { events.onMouseDown && doEvent(events.onMouseDown,e); }} 
         onMouseUp={(e) => { events.onMouseUp && doEvent(events.onMouseUp,e); }} 
@@ -56,6 +63,8 @@ const MeuCanvas = props => {
         onTouchMove={(e) => { events.onTouchMove && doEvent(events.onTouchMove,e); }} 
         onTouchEnd={(e) => { events.onTouchEnd && doEvent(events.onTouchEnd,e); }} 
         onTouchCancel={(e) => { events.onTouchCancel && doEvent(events.onTouchCancel,e); }} 
+        */
+       ...eventListeners}
         
         {...rest}    
     />;

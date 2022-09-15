@@ -4,7 +4,7 @@ import TouchManager, {normalizeWheel} from "./TouchManager";
 const ZoomableCanvas = (props) => {
 
     console.log("Criou o ZoomableCanvas");
-    const { draw, spanButton, events, ...rest } = props
+    const { uidraw, draw, spanButton, events, getInitialState, ...rest } = props
 
     const touchManager = new TouchManager();
     let offLeft = 0;
@@ -58,6 +58,9 @@ const ZoomableCanvas = (props) => {
         offTop = ctx.canvas.offsetTop * 1.0;
 
         ctx.clearRect(0, 0, w,h);
+
+        
+
         ctx.save();
 
         ctx.scale(estado.scale,estado.scale);
@@ -66,6 +69,8 @@ const ZoomableCanvas = (props) => {
         draw(ctx,estado);
 
         ctx.restore();
+
+        uidraw(ctx,estado);
     };
 
     // ############################
@@ -205,9 +210,9 @@ const ZoomableCanvas = (props) => {
     }, false);
 
     // Não é o jeito certo? idaí?
-    const getInitialState = () => {
+    const myGetInitialState = () => {
         console.log("SETANDO ESTADO INICIAL");
-        return {
+        let estadoInicial = {
             mouse:{pageX:0,pageY:0,x:0,y:0,left:false,middle:false,right:false},
             span:{x:0,y:0},
             spanning:false,
@@ -215,20 +220,22 @@ const ZoomableCanvas = (props) => {
             spanningStart:{x:0,y:0},
             spanned:false
         };
+
+        mesclarEstado(estadoInicial,getInitialState());
+
+        return estadoInicial;
     };
 
-    return <MeuCanvas 
-    draw={mydraw}
-    getInitialState={getInitialState}
-    events={{
+    let myListeners = {
+
         onMouseDown:onMouseDown,
         onMouseMove:onMouseMove,
         onMouseUp:onMouseUp,
         onContextMenu:(e,estado) => { 
-            // evitar abrir a janela contextMenu ao clicar o botão direito       
-            //if(e.button == 2) {
-                e.preventDefault();
-            //}
+            if(events.onContextMenu) 
+                return events.onContextMenu(e,estado);
+            else
+                e.preventDefault(); // evitar abrir a janela contextMenu ao clicar o botão direito       
         },
         onWheel:onWheel,
         onTouchStart:(e,estado) => { touchManager.touchstart(e,estado); },
@@ -238,7 +245,17 @@ const ZoomableCanvas = (props) => {
             e.preventDefault();
             touchManager.touchend(e,estado); },
         onTouchCancel:(e,estado) => { touchManager.touchcancel(e,estado); }
-    }}
+    };
+
+    for (const k in events) {
+        if(!(k in myListeners))
+        myListeners[k] = events[k];
+    }
+
+    return <MeuCanvas 
+    draw={mydraw}
+    getInitialState={myGetInitialState}
+    events={myListeners}
     options={{}} />;
     
 };

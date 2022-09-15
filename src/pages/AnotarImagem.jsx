@@ -1,7 +1,8 @@
 import ZoomableCanvas from "../components/Canvas/ZoomableCanvas";
 const AnotarImagem = () => {
 
-    const mydraw = (ctx,estado) => {
+    // Not affected by zooming and spanning
+    const myuidraw = (ctx,estado) => {
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
 
@@ -9,7 +10,48 @@ const AnotarImagem = () => {
         ctx.fillStyle = '#0000ff';
         ctx.fillRect(0, 0, w, b);
         ctx.fillRect(0, h-b, w, b);
+        //ctx.fillStyle = '#00ff00';
+        ctx.fillRect(0, 0, b, h);
+        ctx.fillRect(w-b, 0, b, h);
+    };
+
+    const drawRect = (ctx,ret) => {
+        let startx = ret.start.x;
+        let starty = ret.start.y;
+        let endx = ret.end.x;
+        let endy = ret.end.y;
+
+        if(startx > endx) [startx,endx] = [endx,startx];
+        if(starty > endy) [starty,endy] = [endy,starty];
+
+        ctx.fillRect(startx,starty,endx-startx,endy-starty);
+        ctx.strokeRect(startx,starty,endx-startx,endy-starty);
+    };
+
+    const drawPoly = (ctx,poly) => {
+
+        ctx.beginPath();
+
+        for(let i=0;i<poly.points.length;i++)
+		{
+            const p = poly.points[i];
+			ctx.lineTo(p.x,p.y);
+		}
+
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    };
+
+    const mydraw = (ctx,estado) => {
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+
+        const b = 32
         ctx.fillStyle = '#00ff00';
+        ctx.fillRect(0, 0, w, b);
+        ctx.fillRect(0, h-b, w, b);
+        
         ctx.fillRect(0, 0, b, h);
         ctx.fillRect(w-b, 0, b, h);
 
@@ -24,56 +66,167 @@ const AnotarImagem = () => {
             else 
             ctx.fillStyle = '#ffffff';
 
-            ctx.fillRect(estado.mouse.x,estado.mouse.y,b,b);
+            ctx.fillRect(estado.mouse.x-b/2,estado.mouse.y-b/2,b,b);
         }
 
-        if(estado.retangulos)
+        ctx.lineWidth = 6.0;
+        if(estado.desenhando)
         {
-            ctx.fillStyle = '#00ffff';
-            estado.retangulos.map(function (ret) {
-                ctx.fillRect(ret.x, ret.y, b, b);
+            ctx.fillStyle = '#ff0000';
+            ctx.strokeStyle = '#660000';
+            if(estado.desenhando.type == "rect") drawRect(ctx,estado.desenhando);
+            else if(estado.desenhando.type == "poly") drawPoly(ctx,estado.desenhando);
+        }
+
+        if(estado.elementos)
+        {
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#666666';
+            estado.elementos.map((e) => {
+                if(e.type == "rect") drawRect(ctx,e);
+                else if(e.type == "poly") drawPoly(ctx,e);
             });
         }
     };
 
     const onMouseDown = (e,estado) =>
     {
+        if(e.button == 0)
+        {
+            const mouse = estado.mouse;
+            const tipo = estado.tipoAtivo ? estado.tipoAtivo : "rect";
 
+            if(!estado.desenhando)
+            {
+                let elem = {};
+                
+                if(tipo == "rect")
+                {
+                    elem = {type:tipo,start:{x:mouse.x,y:mouse.y},end:{x:mouse.x,y:mouse.y}};
+                }
+                else if(tipo == "poly")
+                {
+                    elem = {type:tipo,points:[{x:mouse.x,y:mouse.y},{x:mouse.x,y:mouse.y}]};
+                }
+
+                return {
+                    desenhando:elem
+                };
+            }
+            else
+            {
+                let elem = estado.desenhando;
+
+                if(tipo == "poly")
+                {
+                    elem.points.push({x:mouse.x,y:mouse.y});
+                }
+
+                return {
+                    desenhando:elem
+                };
+            }
+        }
     };
 
     const onMouseMove = (e,estado) =>
     {
-
-    };
-
-    const onMouseUp = (e,estado) =>
-    {
-
-    };
-
-    const onClick = (e,estado) =>
-    {
-        const ret = {x:estado.mouse.x,y:estado.mouse.y};
-
-        if(e.button == 2)
+        if(estado.desenhando)
         {
-            console.log(estado);
-            return {};
-        }
-        else if(e.button == 0)
-        {
+            const mouse = estado.mouse;
+            const elem = estado.desenhando;
+
+            if(elem.type == "rect" && mouse.left)
+            {
+                elem.end.x = mouse.x;
+                elem.end.y = mouse.y;
+            }
+            else if(elem.type == "poly")
+            {
+                const p = elem.points[elem.points.length-1];
+                p.x = mouse.x;
+                p.y = mouse.y;
+            }
+
             return {
-                // Apesar de mesclar, filhos são substituídos, então é necessário mesclar aqui:
-                retangulos:[ret,...(estado.retangulos ? estado.retangulos : [])]
+                desenhando:elem
             };
         }
     };
 
+    const onMouseUp = (e,estado) =>
+    {
+        if(e.button == 0 && estado.desenhando)
+        {
+            const elem = estado.desenhando;
+         
+            if(elem.type == "rect")
+            return {
+                // Apesar de mesclar, filhos são substituídos, então é necessário mesclar aqui:
+                desenhando:false,
+                elementos:[elem,...(estado.elementos ? estado.elementos : [])]
+            };
+            else if(elem.type == "poly")
+            {
+
+            }
+        }
+    };
+
+    const onClick = (e,estado) =>
+    {
+        
+
+        if(e.button == 2)
+        {
+            console.log(estado);
+            return {
+                desenhando:false,
+                elementos:[]
+            };
+        }
+        
+        
+    };
+
+    const onKeyPress = (e,estado) =>
+    {
+        console.log("Pressionado:"+e.key);
+
+        if(e.key == "1")
+            return { tipoAtivo:"rect" };
+        if(e.key == "2")
+            return { tipoAtivo:"poly" };
+        if(e.key == "Enter")
+        {
+            let elem = estado.desenhando;
+            if(elem && elem.type == "poly")
+            {
+                return {
+                    // Apesar de mesclar, filhos são substituídos, então é necessário mesclar aqui:
+                    desenhando:false,
+                    elementos:[elem,...(estado.elementos ? estado.elementos : [])]
+                };
+            }
+        }
+    };
+
+    const getInitialState = () => {
+        return {
+            tipoAtivo:"rect",
+            desenhando:false,
+            elementos:[]
+        };
+    };
+
     return (
         <ZoomableCanvas
+        getInitialState={getInitialState}
         spanButton="right"
+        uidraw={myuidraw}
         draw={mydraw}
         events={{
+            onKeyPress:onKeyPress,
             onMouseDown:onMouseDown,
             onMouseMove:onMouseMove,
             onMouseUp:onMouseUp,
