@@ -1,5 +1,6 @@
 import React from 'react'
 import CanvasControler from './CanvasControler'
+import TouchManager, {normalizeWheel} from "./TouchManager";
 import "./MeuCanvas.css"
 
 export function mesclarEstado(estado,novoEstado) {
@@ -19,36 +20,50 @@ export function mesclarEstado(estado,novoEstado) {
 
 const MeuCanvas = props => {  
 
+    console.log("Criou o MeuCanvas");
+
     const { getInitialState, draw, options, events, ...rest } = props
     const { context, ...moreConfig } = options
-    const [estado,setEstado,canvasRef] = CanvasControler(draw,getInitialState, {context})
-        
-    // GetEstado
-    // Essa função garante que:
-    // - O estado obtido sempre é o mais recente
-    //   - Um conflito de mesclagem é evitado por alterar o próprio objeto com novos valores e então realizar o setEstado
-    // - Cada mudança de estado mudará apenas o necessário
-    const getEstado = () => {
-        if(!canvasRef) return {};
-
-        return canvasRef.current.estado;
-    }
-    // Executa o evento e mescla o estado
-    const doEvent = (callback,e) => 
-    {
-        const _estado = getEstado();
-
-        const novoEstado = callback(e,_estado);
-
-        mesclarEstado(_estado,novoEstado);
-        setEstado({..._estado});
+    const [doEvent,canvasRef] = CanvasControler(draw,getInitialState, {context})
+    
+    let myListeners = {
+        onContextMenu:(e,estado) => { 
+            if(events.onContextMenu) 
+                return events.onContextMenu(e,estado);
+            else
+                e.preventDefault(); // evitar abrir a janela contextMenu ao clicar o botão direito       
+        },
+        onTouchStart:(e,estado) => { touchManager.touchstart(e,estado); },
+        onTouchMove:(e,estado) => { touchManager.touchmove(e,estado); },
+        onTouchEnd:(e,estado) => { 
+            // Impedir um evento de tap
+            e.preventDefault();
+            touchManager.touchend(e,estado); },
+        onTouchCancel:(e,estado) => { touchManager.touchcancel(e,estado); }
     };
 
-    let eventListeners = {};
     for (const k in events) {
-        eventListeners[k] = (e) => { events[k] && doEvent(events[k],e); }
+        if(!(k in myListeners))
+        myListeners[k] = (e) => { doEvent(events[k],e); }
     }
+  
+    // TouchManager gerencia para que funcione em ambientes de toque perfeitamente
+    // Basicamente o TouchManager faz ficar igual a quando é clique do mouse 
+    // 1 toque -> Botão esquerdo
+    // 2 toques -> Botão direito
+    // 3 toques -> Botão do meio
+    // (Especialmente necessário para funcionar o pinch zoom + span)
+    const touchManager = new TouchManager();
+  
+    touchManager.addEventListener("onTouchDown",(...args) => {myListeners.onMouseDown && myListeners.onMouseDown(...args)}, false);
+    touchManager.addEventListener("onTouchMove",(...args) => {myListeners.onMouseMove && myListeners.onMouseMove(...args)}, false);
+    touchManager.addEventListener("onTouchUp",(...args) => {myListeners.onMouseUp && myListeners.onMouseUp(...args)}, false);
+    touchManager.addEventListener("onTouchZoom",(...args) => {
+        myListeners.doZoom && myListeners.doZoom(...args);
+    }, false);
     
+    // Removing custom doZoom listener from canvasListeners to prevent React Error
+    const { doZoom, ...canvasListeners} = myListeners;
     return <canvas
         tabIndex="0"
         id="canvasInAPerfectWorld" 
@@ -64,7 +79,7 @@ const MeuCanvas = props => {
         onTouchEnd={(e) => { events.onTouchEnd && doEvent(events.onTouchEnd,e); }} 
         onTouchCancel={(e) => { events.onTouchCancel && doEvent(events.onTouchCancel,e); }} 
         */
-       ...eventListeners}
+       ...canvasListeners}
         
         {...rest}    
     />;

@@ -1,12 +1,11 @@
 import MeuCanvas, {mesclarEstado} from "./MeuCanvas";
-import TouchManager, {normalizeWheel} from "./TouchManager";
+import { normalizeWheel } from "./TouchManager";
 
 const ZoomableCanvas = (props) => {
 
     console.log("Criou o ZoomableCanvas");
     const { uidraw, draw, spanButton, events, getInitialState, ...rest } = props
 
-    const touchManager = new TouchManager();
     let offLeft = 0;
     let offTop = 0;
 
@@ -154,7 +153,7 @@ const ZoomableCanvas = (props) => {
         return estado;
     };
 
-    const doZoom = (screenPos,amount,estado) => {  
+    const doZoom = (e,estado) => {  
 
         let scale = estado.scale;
         let span = estado.span;
@@ -164,25 +163,28 @@ const ZoomableCanvas = (props) => {
         //let screenPos = mouse;
 
         let before = untransfp({
-            x:screenPos.pageX,
-            y:screenPos.pageY
+            x:e.pageX,
+            y:e.pageY
         },span,scale);
 
-		scale *= amount;
+		scale *= e.delta;
 		scale = Math.max(Math.min(scale,20.0),0.25);
 		
         let after = untransfp({
-            x:screenPos.pageX,
-            y:screenPos.pageY
+            x:e.pageX,
+            y:e.pageY
         },span,scale);
 
 		span.x -= after.x - before.x;
 		span.y -= after.y - before.y;
 
+        const newMousePos = untransfp({x:mouse.pageX,y:mouse.pageY},span,scale); // Atualiza o mouse com a nova transformação
+        mouse.x = newMousePos.x;
+        mouse.y = newMousePos.y;
         mesclarEstado(estado,{
             scale:scale,
             span:span,
-            mouse: getMouse({pageX:mouse.pageX,pageY:mouse.pageY},span,scale) // Atualiza o mouse com a nova transformação
+            mouse:mouse
         });
 
         return estado;
@@ -190,28 +192,19 @@ const ZoomableCanvas = (props) => {
 
     const onWheel = (e,estado) => {
 
-        let wheelDelta = normalizeWheel(e);
-        let amount = 1.0 - Math.max(Math.min(wheelDelta.pixelY/200.0,0.2),-0.2);
+        const wheelDelta = normalizeWheel(e);
+        const amount = 1.0 - Math.max(Math.min(wheelDelta.pixelY/200.0,0.2),-0.2);
+        const mouse = estado.mouse;
 
-        return doZoom(estado.mouse,amount,estado);
+        return doZoom({
+            pageX:mouse.pageX,
+            pageY:mouse.pageY,
+            delta:amount
+            },estado);
     };
-
-    // TouchManager gerencia para que funcione em ambientes de toque perfeitamente
-    // Basicamente o TouchManager faz ficar igual a quando é clique do mouse 
-    // 1 toque -> Botão esquerdo
-    // 2 toques -> Botão direito
-    // 3 toques -> Botão do meio
-    // (Especialmente necessário para funcionar o pinch zoom + span)
-    touchManager.addEventListener("onTouchDown",(...args) => {onMouseDown(...args)}, false);
-	touchManager.addEventListener("onTouchMove",(...args) => {onMouseMove(...args)}, false);
-    touchManager.addEventListener("onTouchUp",(...args) => {onMouseUp(...args)}, false);
-    touchManager.addEventListener("onTouchZoom",(e,...args) => {
-        return doZoom(e,e.delta,...args);
-    }, false);
-
     // Não é o jeito certo? idaí?
     const myGetInitialState = () => {
-        console.log("SETANDO ESTADO INICIAL");
+        console.log("SETANDO ESTADO INICIAL...");
         let estadoInicial = {
             mouse:{pageX:0,pageY:0,x:0,y:0,left:false,middle:false,right:false},
             span:{x:0,y:0},
@@ -227,24 +220,11 @@ const ZoomableCanvas = (props) => {
     };
 
     let myListeners = {
-
         onMouseDown:onMouseDown,
         onMouseMove:onMouseMove,
         onMouseUp:onMouseUp,
-        onContextMenu:(e,estado) => { 
-            if(events.onContextMenu) 
-                return events.onContextMenu(e,estado);
-            else
-                e.preventDefault(); // evitar abrir a janela contextMenu ao clicar o botão direito       
-        },
         onWheel:onWheel,
-        onTouchStart:(e,estado) => { touchManager.touchstart(e,estado); },
-        onTouchMove:(e,estado) => { touchManager.touchmove(e,estado); },
-        onTouchEnd:(e,estado) => { 
-            // Impedir um evento de tap
-            e.preventDefault();
-            touchManager.touchend(e,estado); },
-        onTouchCancel:(e,estado) => { touchManager.touchcancel(e,estado); }
+        doZoom:doZoom
     };
 
     for (const k in events) {

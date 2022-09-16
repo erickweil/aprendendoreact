@@ -105,7 +105,7 @@ export default class TouchManager {
 			screenX:touchPos.x,
 			screenY:touchPos.y,
 			button:touchToButton(this.numTouches),
-			buttons:touchToButtons(this.numTouches)
+			buttons: eventName == "onTouchUp" ? 0 : touchToButtons(this.numTouches)
 
 			// relatedTarget
 			// altKey, crtlKey, shiftKey, metaKey, getModifierState(key)
@@ -186,8 +186,11 @@ export default class TouchManager {
 			
 			var t = this.getTouchByID(new_t.identifier);
 			//alert(t);
-			t.x	= new_t.pageX;
-			t.y = new_t.pageY;
+			if(t)
+			{
+				t.x	= new_t.pageX;
+				t.y = new_t.pageY;
+			}
 		}
 		
 		var touchPos = this.getCenterTouchPos();
