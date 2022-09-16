@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/git/aprendendoreact/build/static/css/main.3465b75d.css",
+    "main.js": "/git/aprendendoreact/build/static/js/main.90e54d5f.js",
+    "static/js/787.a67f0fff.chunk.js": "/git/aprendendoreact/build/static/js/787.a67f0fff.chunk.js",
+    "index.html": "/git/aprendendoreact/build/index.html",
+    "main.3465b75d.css.map": "/git/aprendendoreact/build/static/css/main.3465b75d.css.map",
+    "main.90e54d5f.js.map": "/git/aprendendoreact/build/static/js/main.90e54d5f.js.map",
+    "787.a67f0fff.chunk.js.map": "/git/aprendendoreact/build/static/js/787.a67f0fff.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.3465b75d.css",
+    "static/js/main.90e54d5f.js"
+  ]
+}

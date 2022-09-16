@@ -15,7 +15,7 @@ import Ops from "./pages/Ops";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/git/aprendendoreact/build">
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Inicio />} />

@@ -42,19 +42,26 @@ const AnotarImagem = () => {
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
 
-        ctx.lineWidth = 6.0;
+        if(estado.imagemFundo)
+        {
+            ctx.drawImage(estado.imagemFundo,
+                estado.imagemFundoPos.x,estado.imagemFundoPos.y,
+                estado.imagemFundoSize.x,estado.imagemFundoSize.y);
+        }
+
+        ctx.lineWidth = 2.0;
         if(estado.desenhando)
         {
-            ctx.fillStyle = '#ff0000';
-            ctx.strokeStyle = '#660000';
+            ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
+            ctx.strokeStyle = "rgba(127, 0, 0, 0.7)";
             if(estado.desenhando.type == "rect") drawRect(ctx,estado.desenhando);
             else if(estado.desenhando.type == "poly") drawPoly(ctx,estado.desenhando);
         }
 
         if(estado.elementos)
         {
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#666666';
+            ctx.fillStyle = "rgba(0, 255, 0, 0.3)";
+            ctx.strokeStyle = "rgba(0, 127, 0, 0.6)";
             estado.elementos.map((e) => {
                 if(e.type == "rect") drawRect(ctx,e);
                 else if(e.type == "poly") drawPoly(ctx,e);
@@ -148,21 +155,26 @@ const AnotarImagem = () => {
         }
     };
 
+    const finishPoly = (e,estado) =>
+    {
+        let elem = estado.desenhando;
+        if(elem && elem.type == "poly")
+        {
+            estado.elementos.push(elem);
+            return {
+                desenhando:false,
+                elementos:estado.elementos
+            };
+        }
+    };
+
     const onClick = (e,estado) =>
     {
         
 
         if(e.button == 2)
         {
-            let elem = estado.desenhando;
-            if(elem && elem.type == "poly")
-            {
-                estado.elementos.push(elem);
-                return {
-                    desenhando:false,
-                    elementos:estado.elementos
-                };
-            }
+            return finishPoly(e,estado);
         }
         
         if(e.button == 1)
@@ -181,42 +193,110 @@ const AnotarImagem = () => {
             return { tipoAtivo:"poly" };
         if(e.key == "Enter")
         {
-            let elem = estado.desenhando;
-            if(elem && elem.type == "poly")
+            return finishPoly(e,estado);
+        }
+    };
+
+    const onKeyDown = (e,estado) =>
+    {
+        if(e.key == "Escape" || e.key == "Esc")
+        {
+            return finishPoly(e,estado);
+        }
+        if(e.key == "z" && e.ctrlKey) // Deletar último elemento desenhado quando apertar ctrl+z
+        {
+            if(estado.desenhando)
             {
-                estado.elementos.push(elem);
+                if(estado.desenhando.type == "poly" && estado.desenhando.points.length > 2)
+                {
+                    estado.desenhando.points.pop();
+                    return {
+                    desenhando:estado.desenhando
+                    };
+                }
+                else return {
+                    desenhando:false
+                };
+            }
+            else if(estado.elementos.length > 0)
+            {
+                estado.elementos.pop();
                 return {
-                    desenhando:false,
                     elementos:estado.elementos
                 };
             }
         }
-    };
+    }
 
     
     const getInitialState = (estado) => {
-
         // Só alterar o estado com mesclarEstado
         // Então o Canvas gerencia as mudanças assim decidindo re-desenhar
         mesclarEstado(estado,{
             tipoAtivo:"rect",
             desenhando:false,
-            elementos:[]
+            elementos:[],
+            imagemFundo: false,
+            imagemFundoPos: {x:0,y:0},
+            imagemFundoScale: 1.0
         });
+
+        const myImg = new Image();
+        myImg.onload = () => {
+
+            let imgW = myImg.naturalWidth;
+            let imgH = myImg.naturalHeight;
+
+            const W = estado.width;
+            const H = estado.height;
+
+            let scaleX = 1;
+            if (imgW > W)
+                scaleX = W/imgW;
+
+            let scaleY = 1;
+            if (imgH > H)
+                scaleY = H/imgH;
+
+            let scale = scaleY;
+            if(scaleX < scaleY)
+                scale = scaleX;
+            
+            imgH = imgH*scale;
+            imgW = imgW*scale; 
+            
+            mesclarEstado(estado,{
+                imagemFundo: myImg,
+                imagemFundoPos: {
+                    x:estado.width/2 - imgW /2,
+                    y:estado.height/2 - imgH /2
+                },
+                imagemFundoSize: {
+                    x:imgW,
+                    y:imgH
+                }
+            });
+        };
+        myImg.src = 'https://cdn.vercapas.com.br/covers/folha-de-s-paulo/2022/capa-jornal-folha-de-s-paulo-16-09-2022-c4a2010f.jpg';
     };
 
     return (
         <ZoomableCanvas
         getInitialState={getInitialState}
-        spanButton="right"
         uidraw={myuidraw}
         draw={mydraw}
         events={{
             onKeyPress:onKeyPress,
+            onKeyDown:onKeyDown,
             onMouseDown:onMouseDown,
             onMouseMove:onMouseMove,
             onMouseUp:onMouseUp,
             onClick:onClick
+        }}
+        options={{
+            spanButton:"right",
+            maxZoomScale:100.0,
+            minZoomScale:0.20
         }}
         />
     );

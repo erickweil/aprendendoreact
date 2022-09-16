@@ -1,6 +1,13 @@
 import { useRef, useState, useEffect } from 'react'
 //import TouchManager from './TouchManager';
 
+/**
+ * Função que controla o estado do canvas,
+ * sempre que modificar o estado, faça-o com essa função pois assim o canvas saberá quando atualizar
+ * @param estado O estado anterior
+ * @param novoEstado Objeto com apenas as propriedades que mudaram 
+ * (Pode também ser o mesmo objeto do estado anterior)
+ */
 export function mesclarEstado(estado,novoEstado) {
   // https://stackoverflow.com/questions/171251/how-can-i-merge-properties-of-two-javascript-objects-dynamically
   //setEstado({...estado,...novoEstado});
@@ -16,8 +23,8 @@ export function mesclarEstado(estado,novoEstado) {
   if(changed)estado._changes++;
 }
 
-/*
-https://www.pluralsight.com/guides/re-render-react-component-on-window-resize
+/**
+@see https://www.pluralsight.com/guides/re-render-react-component-on-window-resize
 Currently, our example code is set up to call handleResize as often
 as the window resizes. We're setting state and re-rendering for every 
 single pixel change as often as the event loop will let us.
@@ -41,8 +48,20 @@ function debounce(fn, ms) {
   };
 }
 
-/*
-https://medium.com/@pdx.lucasm/canvas-with-react-js-32e133c05258
+/** Transformar de posição local no canvas para página */ 
+export function canvasToPage(p,offsetLeft,offsetTop)
+{
+  return {x:p.x + offsetLeft,y:p.y + offsetTop};
+}
+
+/** Transformar de posição da página para local no canvas */
+export function pageToCanvas(p,offsetLeft,offsetTop)
+{
+  return {x:p.x-offsetLeft,y:p.y-offsetTop};
+}
+
+/**
+@see https://medium.com/@pdx.lucasm/canvas-with-react-js-32e133c05258
 
 Canvas Controler, handles resizing and animationframe callbacks
 also handles state using useRef only... to prevent re-renders
@@ -60,6 +79,10 @@ const CanvasControler = (draw,getInitialState, options={}) => {
   {
     console.log("SETANDO ESTADO INICIAL...");
     const novoEstado = {
+      offsetLeft:0,
+      offsetTop:0,
+      width:window.innerWidth,
+      height:window.innerHeight,
       _changes:1
     };
     
@@ -101,7 +124,7 @@ const CanvasControler = (draw,getInitialState, options={}) => {
     console.log("useEffect do CanvasControler")
     const canvas = canvasRef.current.canvas;
     const context = canvas.getContext((options && options.context) || '2d');
-    let frameCount = 0;
+
     // Timer
     let animationFrameId;
 
@@ -112,11 +135,17 @@ const CanvasControler = (draw,getInitialState, options={}) => {
       const height = window.innerHeight - top;
 
       if (canvas.width !== width || canvas.height !== height) {
-        const estado = getEstado();
-        estado._changes++; // marca que houve uma mudança para atualizar o canvas
+        const estado = getEstado();        
 
         canvas.width = width;
         canvas.height = height;
+
+        mesclarEstado(estado,{
+          width:width,
+          height:height,
+          offsetLeft:canvas.offsetLeft,
+          offsetTop:canvas.offsetTop
+        });
       }
     };
 
@@ -130,6 +159,12 @@ const CanvasControler = (draw,getInitialState, options={}) => {
       // só garante que vai atualizar a cada mudança se o estado for modificado com mesclarEstado
       if(estado._changes > 0)
       {
+        mesclarEstado(estado,{
+          width:canvas.width,
+          height:canvas.height,
+          offsetLeft:canvas.offsetLeft,
+          offsetTop:canvas.offsetTop
+        });
         draw(context,estado);
         estado._changes = 0;
       }

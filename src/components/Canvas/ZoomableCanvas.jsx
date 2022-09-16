@@ -1,40 +1,69 @@
 import MeuCanvas from "./MeuCanvas";
-import { mesclarEstado } from "./CanvasControler";
+import { mesclarEstado, pageToCanvas, canvasToPage } from "./CanvasControler";
 import { normalizeWheel } from "./TouchManager";
 
+/** Transformar de posição local no canvas para página */
+export function zoomCanvasToPage(p,offsetLeft,offsetTop,span,scale)
+{
+    const tp = {x:(p.x - span.x) * scale,y:(p.y - span.y) * scale};
+
+    return canvasToPage(tp,offsetLeft,offsetTop);
+}
+
+/** Transformar de posição da página para local no canvas */
+export function pageToZoomCanvas(p,offsetLeft,offsetTop,span,scale)
+{
+    const tp = pageToCanvas(p,offsetLeft,offsetTop);
+
+    return {x:tp.x / scale + span.x,y:tp.y / scale + span.y};
+}
+
+/**
+ * Zoomable Canvas
+ * Permite mover para os lados e dar zoom no canvas
+ * @param draw Função de desenho normal
+ * @param uidraw Função que irá desenhar depois de tudo, sem escala nem zoom
+ * @param events Objeto que deve conter quais eventos deseja controlar (ex: onMouseDown). O evento receberá como parâmetro (e,estado) onde
+ * estado é um objeto contendo informações que podem ser alteradas com a função mesclarEstado do CanvasControler
+ * @param getInitialState Função que inicializa o estado
+ * @param options Opções gerais
+ * @param   options.DEBUG exibe informações sobre o canvas
+ * @param   options.spanButton "any" controla qual botão realiza o span: "any", "left", "middle" ou "right"
+ * @param   options.maxZoomScale 20.0 O máximo que pode dar zoom
+ * @param   options.minZoomScale 0.25 O mínimo que pode dar zoom
+ * @param   options.spanEnabled true Se é possível realizar span
+ * @param   options.zoomEnabled true Se é possível realizar zoom
+ * @param   options.useTouchManager true // TouchManager simplifica o uso do toque re-interpretando como Mouse
+ * @param   options.preventContextMenu true // Cancelar eventos de abrir o menu do botão direito ou long-tap
+ * @param   options.context "2d" // contexto de desenho do canvas
+ * 
+ */
 const ZoomableCanvas = (props) => {
 
     console.log("Criou o ZoomableCanvas");
-    const { uidraw, draw, spanButton, events, getInitialState, ...rest } = props
+    const { uidraw, draw, events, getInitialState, options:_options, ...rest } = props
 
-    let offLeft = 0;
-    let offTop = 0;
+    const defaultOptions = {
+        DEBUG: false,
+        spanButton:"any",
+        maxZoomScale: 20.0,
+        minZoomScale: 0.25,
+        spanEnabled: true,
+        zoomEnabled: true
+    };
+    const options = _options ? {...defaultOptions,..._options} : defaultOptions;
 
-    // Transformar de posição local para tela
-    const transfp = (p,span,scale) =>
-	{
-		let tp = {x:p.x - span.x,y:p.y - span.y};
-		tp = {x:tp.x * scale + offLeft,y:tp.y * scale + offTop};
-
-		return tp;
-	};
-	
-    // Transformar de posição da tela para local
-	const untransfp = (p,span,scale) =>
-	{
-		let tp = {x:(p.x-offLeft) / scale,y:(p.y-offTop) / scale};
-		tp = {x:tp.x + span.x,y:tp.y + span.y};
-		
-		return tp;
-	};
-
+    const spanButton = options.spanButton;
+    const DEBUG = options.DEBUG;
+    const maxZoomScale = options.maxZoomScale;
+    const minZoomScale = options.minZoomScale;
     // Obtêm o mouse em coordenadas locais
-    const getMouse = (e,span,scale) => 
+    const getMouse = (e,estado) => 
     {
-        const umouse = untransfp({
+        const umouse = pageToZoomCanvas({
             x:e.pageX,
             y:e.pageY
-        },span,scale);
+        },estado.offsetLeft,estado.offsetTop,estado.span,estado.scale);
 
 
         return {
@@ -49,16 +78,11 @@ const ZoomableCanvas = (props) => {
     };
 
     // Desenhar ou não algumas informações sobre a tela e o mouse
-    const DEBUG = true;
     let DEBUG_N = 0;
     // Função que desenha tudo
     const mydraw = (ctx,estado) => {
-
-        const w = ctx.canvas.width;
-        const h = ctx.canvas.height;
-
-        offLeft = ctx.canvas.offsetLeft * 1.0;
-        offTop = ctx.canvas.offsetTop * 1.0;
+        const w = estado.width;
+        const h = estado.height;
 
         ctx.clearRect(0, 0, w,h);
 
@@ -94,10 +118,7 @@ const ZoomableCanvas = (props) => {
         ctx.restore();
 
         if(DEBUG)
-        {
-            const w = ctx.canvas.width;
-            const h = ctx.canvas.height;
-    
+        {    
             const b = 32
             ctx.fillStyle = '#0000ff';
             ctx.fillRect(0, 0, w, b);
@@ -125,12 +146,14 @@ const ZoomableCanvas = (props) => {
     // onWheel e doZoom - Controlar o zoom
     const onMouseDown = (e,estado) => {
 
-        const mouse = getMouse(e,estado.span,estado.scale);
+        const mouse = getMouse(e,estado);
+        
 
-        const spanning = spanButton == "any" ||
+        const spanning = estado.spanEnabled &&
+        ((spanButton == "any") ||
         (spanButton == "left" && mouse.left) ||
         (spanButton == "middle" && mouse.middle) ||
-        (spanButton == "right" && mouse.right);
+        (spanButton == "right" && mouse.right));
 
         mesclarEstado(estado,{
             mouse:mouse,
@@ -144,30 +167,41 @@ const ZoomableCanvas = (props) => {
     };
 
     const onMouseMove = (e,estado) => {
-        const mouse = getMouse(e,estado.span,estado.scale);
+        const mouse = getMouse(e,estado);
 
-        const span = estado.span;
-        let spanned = estado.spanned;
-
-        if(estado.spanning)
+        if(estado.spanEnabled)
         {
-            span.x -= mouse.x - estado.spanningStart.x;
-            span.y -= mouse.y - estado.spanningStart.y;
-            spanned = true;
-        }
+            const span = estado.span;
+            let spanned = estado.spanned;
 
-        mesclarEstado(estado,{
-            mouse:getMouse(e,estado.span,estado.scale),
-            span:span,
-            spanned:spanned
-        });
+            if(estado.spanning)
+            {
+                span.x -= mouse.x - estado.spanningStart.x;
+                span.y -= mouse.y - estado.spanningStart.y;
+                spanned = true;
+            }
+
+            mesclarEstado(estado,{
+                mouse:getMouse(e,estado),
+                span:span,
+                spanned:spanned
+            });
+        }
+        else
+        {
+            mesclarEstado(estado,{
+                mouse:getMouse(e,estado),
+                spanning: false,
+                spanned: false
+            });
+        }
 
         if(!estado.spanning && events.onMouseMove) 
         mesclarEstado(estado,events.onMouseMove(e,estado));
     };
 
     const onMouseUp = (e,estado) => {
-        const mouse = getMouse(e,estado.span,estado.scale);
+        const mouse = getMouse(e,estado);
 
         const wasSpanning = estado.spanning;
         const wasSpanned = estado.spanned;
@@ -192,31 +226,33 @@ const ZoomableCanvas = (props) => {
     };
 
     const doZoom = (e,estado) => {  
+        if(!estado.zoomEnabled) return;
 
         let scale = estado.scale;
         let span = estado.span;
         let mouse = estado.mouse;
-        
+        let offLeft = estado.offsetLeft;
+        let offTop = estado.offsetTop;
         //let screenPos = {pageX:window.innerWidth/2.0,pageY:window.innerHeight/2.0};
         //let screenPos = mouse;
 
-        let before = untransfp({
+        let before = pageToZoomCanvas({
             x:e.pageX,
             y:e.pageY
-        },span,scale);
+        },offLeft,offTop,span,scale);
 
 		scale *= e.delta;
-		scale = Math.max(Math.min(scale,20.0),0.25);
+		scale = Math.max(Math.min(scale,maxZoomScale),minZoomScale);
 		
-        let after = untransfp({
+        let after = pageToZoomCanvas({
             x:e.pageX,
             y:e.pageY
-        },span,scale);
+        },offLeft,offTop,span,scale);
 
 		span.x -= after.x - before.x;
 		span.y -= after.y - before.y;
 
-        const newMousePos = untransfp({x:mouse.pageX,y:mouse.pageY},span,scale); // Atualiza o mouse com a nova transformação
+        const newMousePos = pageToZoomCanvas({x:mouse.pageX,y:mouse.pageY},offLeft,offTop,span,scale); // Atualiza o mouse com a nova transformação
         mouse.x = newMousePos.x;
         mouse.y = newMousePos.y;
 
@@ -241,13 +277,16 @@ const ZoomableCanvas = (props) => {
     };
     // Não é o jeito certo? idaí?
     const myGetInitialState = (estado) => {
+
         mesclarEstado(estado,{
             mouse:{pageX:0,pageY:0,x:0,y:0,left:false,middle:false,right:false},
             span:{x:0,y:0},
             spanning:false,
             scale:1.0,
             spanningStart:{x:0,y:0},
-            spanned:false
+            spanned:false,
+            spanEnabled:options.spanEnabled,
+            zoomEnabled:options.zoomEnabled
         });
 
         //carrega o estado inicial de quem chamou
@@ -266,12 +305,11 @@ const ZoomableCanvas = (props) => {
         if(!(k in myListeners))
         myListeners[k] = events[k];
     }
-
     return <MeuCanvas 
     draw={mydraw}
     getInitialState={myGetInitialState}
     events={myListeners}
-    options={{}} />;
+    options={options} />;
     
 };
   
