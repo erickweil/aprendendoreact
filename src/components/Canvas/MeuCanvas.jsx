@@ -1,22 +1,7 @@
 import React from 'react'
 import CanvasControler from './CanvasControler'
-import TouchManager, {normalizeWheel} from "./TouchManager";
+import TouchManager from "./TouchManager";
 import "./MeuCanvas.css"
-
-export function mesclarEstado(estado,novoEstado) {
-    // https://stackoverflow.com/questions/171251/how-can-i-merge-properties-of-two-javascript-objects-dynamically
-    //setEstado({...estado,...novoEstado});
-
-    // Se não fizer assim, outras chamadas a updateEstado podem mesclar valores antigos e causar inconsistências
-    // Experimenta comentar essa parte e descomentar a de cima e dar zoom. Agora dê zoom mexendo o mouse ou enquando arrasta a tela
-    // Veja que tudo chacoalha loucamente, é porque dois eventos são enviado ao mesmo tempo com o mesmo objeto de estado
-    // porém apenas um deles registra o estado sobrescrevendo o valor final. Este código visa resolver esse conflito de mesclagem
-    if(!novoEstado) return;
-
-    for (const k in novoEstado) {
-        estado[k] = novoEstado[k];
-    }
-}
 
 const MeuCanvas = props => {  
 

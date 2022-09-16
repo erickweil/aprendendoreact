@@ -1,4 +1,5 @@
-import MeuCanvas, {mesclarEstado} from "./MeuCanvas";
+import MeuCanvas from "./MeuCanvas";
+import { mesclarEstado } from "./CanvasControler";
 import { normalizeWheel } from "./TouchManager";
 
 const ZoomableCanvas = (props) => {
@@ -47,7 +48,10 @@ const ZoomableCanvas = (props) => {
         };
     };
 
-
+    // Desenhar ou não algumas informações sobre a tela e o mouse
+    const DEBUG = true;
+    let DEBUG_N = 0;
+    // Função que desenha tudo
     const mydraw = (ctx,estado) => {
 
         const w = ctx.canvas.width;
@@ -65,10 +69,50 @@ const ZoomableCanvas = (props) => {
         ctx.scale(estado.scale,estado.scale);
         ctx.translate(-estado.span.x,-estado.span.y);
         
+        if(DEBUG)
+        {
+            const b = 32
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(0, 0, w, b);
+            ctx.fillRect(0, h-b, w, b);
+            
+            ctx.fillRect(0, 0, b, h);
+            ctx.fillRect(w-b, 0, b, h);
+
+            if(estado.mouse)
+            {
+                ctx.fillStyle = "#" + 
+                (estado.mouse.left ? "ff" : "00") +
+                (estado.mouse.middle ? "ff" : "00") +
+                (estado.mouse.right ? "ff" : "00");
+
+                ctx.fillRect(estado.mouse.x-b/2,estado.mouse.y-b/2,b,b);
+            }
+        }
         draw(ctx,estado);
 
         ctx.restore();
 
+        if(DEBUG)
+        {
+            const w = ctx.canvas.width;
+            const h = ctx.canvas.height;
+    
+            const b = 32
+            ctx.fillStyle = '#0000ff';
+            ctx.fillRect(0, 0, w, b);
+            ctx.fillRect(0, h-b, w, b);
+            //ctx.fillStyle = '#00ff00';
+            ctx.fillRect(0, 0, b, h);
+            ctx.fillRect(w-b, 0, b, h);   
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = "30px Arial";
+            ctx.fillText("Drawed:"+DEBUG_N, 10, 25);
+            DEBUG_N++;
+
+            ctx.fillText("Changes:"+estado._changes, 200, 25);
+        }
         uidraw(ctx,estado);
     };
 
@@ -97,8 +141,6 @@ const ZoomableCanvas = (props) => {
 
         if(!spanning && events.onMouseDown) 
         mesclarEstado(estado,events.onMouseDown(e,estado));
-
-        return estado;
     };
 
     const onMouseMove = (e,estado) => {
@@ -122,8 +164,6 @@ const ZoomableCanvas = (props) => {
 
         if(!estado.spanning && events.onMouseMove) 
         mesclarEstado(estado,events.onMouseMove(e,estado));
-
-        return estado;
     };
 
     const onMouseUp = (e,estado) => {
@@ -149,8 +189,6 @@ const ZoomableCanvas = (props) => {
             if(events.onClick) 
             mesclarEstado(estado,events.onClick(e,estado));
         }
-
-        return estado;
     };
 
     const doZoom = (e,estado) => {  
@@ -181,13 +219,12 @@ const ZoomableCanvas = (props) => {
         const newMousePos = untransfp({x:mouse.pageX,y:mouse.pageY},span,scale); // Atualiza o mouse com a nova transformação
         mouse.x = newMousePos.x;
         mouse.y = newMousePos.y;
-        mesclarEstado(estado,{
+
+        return {
             scale:scale,
             span:span,
             mouse:mouse
-        });
-
-        return estado;
+        };
     };
 
     const onWheel = (e,estado) => {
@@ -203,20 +240,18 @@ const ZoomableCanvas = (props) => {
             },estado);
     };
     // Não é o jeito certo? idaí?
-    const myGetInitialState = () => {
-        console.log("SETANDO ESTADO INICIAL...");
-        let estadoInicial = {
+    const myGetInitialState = (estado) => {
+        mesclarEstado(estado,{
             mouse:{pageX:0,pageY:0,x:0,y:0,left:false,middle:false,right:false},
             span:{x:0,y:0},
             spanning:false,
             scale:1.0,
             spanningStart:{x:0,y:0},
             spanned:false
-        };
+        });
 
-        mesclarEstado(estadoInicial,getInitialState());
-
-        return estadoInicial;
+        //carrega o estado inicial de quem chamou
+        getInitialState(estado);
     };
 
     let myListeners = {

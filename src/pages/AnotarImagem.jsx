@@ -1,18 +1,10 @@
+import { mesclarEstado } from "../components/Canvas/CanvasControler";
 import ZoomableCanvas from "../components/Canvas/ZoomableCanvas";
 const AnotarImagem = () => {
 
     // Not affected by zooming and spanning
     const myuidraw = (ctx,estado) => {
-        const w = ctx.canvas.width;
-        const h = ctx.canvas.height;
 
-        const b = 32
-        ctx.fillStyle = '#0000ff';
-        ctx.fillRect(0, 0, w, b);
-        ctx.fillRect(0, h-b, w, b);
-        //ctx.fillStyle = '#00ff00';
-        ctx.fillRect(0, 0, b, h);
-        ctx.fillRect(w-b, 0, b, h);
     };
 
     const drawRect = (ctx,ret) => {
@@ -44,30 +36,11 @@ const AnotarImagem = () => {
     };
 
     const mydraw = (ctx,estado) => {
+
+        
+
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
-
-        const b = 32
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(0, 0, w, b);
-        ctx.fillRect(0, h-b, w, b);
-        
-        ctx.fillRect(0, 0, b, h);
-        ctx.fillRect(w-b, 0, b, h);
-
-        if(estado.mouse)
-        {
-            if(estado.mouse.left)
-            ctx.fillStyle = '#ff0000';
-            else if(estado.mouse.middle)
-            ctx.fillStyle = '#00ff00';
-            else if(estado.mouse.right)
-            ctx.fillStyle = '#0000ff';
-            else 
-            ctx.fillStyle = '#ffffff';
-
-            ctx.fillRect(estado.mouse.x-b/2,estado.mouse.y-b/2,b,b);
-        }
 
         ctx.lineWidth = 6.0;
         if(estado.desenhando)
@@ -161,11 +134,13 @@ const AnotarImagem = () => {
             const elem = estado.desenhando;
          
             if(elem.type == "rect")
-            return {
-                // Apesar de mesclar, filhos são substituídos, então é necessário mesclar aqui:
-                desenhando:false,
-                elementos:[elem,...(estado.elementos ? estado.elementos : [])]
-            };
+            {
+                estado.elementos.push(elem);
+                return {
+                    desenhando:false,
+                    elementos:estado.elementos
+                };
+            }
             else if(elem.type == "poly")
             {
 
@@ -179,14 +154,21 @@ const AnotarImagem = () => {
 
         if(e.button == 2)
         {
-            console.log(estado);
-            return {
-                desenhando:false,
-                elementos:[]
-            };
+            let elem = estado.desenhando;
+            if(elem && elem.type == "poly")
+            {
+                estado.elementos.push(elem);
+                return {
+                    desenhando:false,
+                    elementos:estado.elementos
+                };
+            }
         }
         
-        
+        if(e.button == 1)
+        {
+            return { tipoAtivo: estado.tipoAtivo == "rect" ? "poly" : "rect" };
+        }
     };
 
     const onKeyPress = (e,estado) =>
@@ -202,21 +184,25 @@ const AnotarImagem = () => {
             let elem = estado.desenhando;
             if(elem && elem.type == "poly")
             {
+                estado.elementos.push(elem);
                 return {
-                    // Apesar de mesclar, filhos são substituídos, então é necessário mesclar aqui:
                     desenhando:false,
-                    elementos:[elem,...(estado.elementos ? estado.elementos : [])]
+                    elementos:estado.elementos
                 };
             }
         }
     };
 
-    const getInitialState = () => {
-        return {
+    
+    const getInitialState = (estado) => {
+
+        // Só alterar o estado com mesclarEstado
+        // Então o Canvas gerencia as mudanças assim decidindo re-desenhar
+        mesclarEstado(estado,{
             tipoAtivo:"rect",
             desenhando:false,
             elementos:[]
-        };
+        });
     };
 
     return (

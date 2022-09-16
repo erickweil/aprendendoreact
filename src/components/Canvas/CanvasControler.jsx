@@ -1,6 +1,21 @@
 import { useRef, useState, useEffect } from 'react'
-import { mesclarEstado } from './MeuCanvas';
 //import TouchManager from './TouchManager';
+
+export function mesclarEstado(estado,novoEstado) {
+  // https://stackoverflow.com/questions/171251/how-can-i-merge-properties-of-two-javascript-objects-dynamically
+  //setEstado({...estado,...novoEstado});
+
+  if(!novoEstado) return;
+
+  let changed = false;
+  for (const k in novoEstado) {
+      estado[k] = novoEstado[k];
+      changed = true;
+  }
+
+  if(changed)estado._changes++;
+}
+
 /*
 https://www.pluralsight.com/guides/re-render-react-component-on-window-resize
 Currently, our example code is set up to call handleResize as often
@@ -43,7 +58,14 @@ const CanvasControler = (draw,getInitialState, options={}) => {
   const canvasRef = useRef({canvas:null,estado:null});
   if(!canvasRef.current.estado)
   {
-    canvasRef.current.estado =  getInitialState();
+    console.log("SETANDO ESTADO INICIAL...");
+    const novoEstado = {
+      _changes:1
+    };
+    
+    getInitialState(novoEstado);
+
+    canvasRef.current.estado = novoEstado;
   }
 
   // GetEstado
@@ -63,9 +85,8 @@ const CanvasControler = (draw,getInitialState, options={}) => {
     const _estado = getEstado();
 
     // Pode retornar apenas o que mudou como um novo objeto
-    // O mesmo objeto já modificado
-    // Um objeto vazio
-    // Ou retornar nada.
+    // O mesmo objeto já modificado (Se modificar o mesmo objeto não precisa retornar ele)
+    // Um objeto vazio, falso, null ou não retornar.
     const novoEstado = callback(e,_estado);
 
     // Em qualquer situação, mesclarEstado faz com que o novoEstado seja aplicado
@@ -91,6 +112,9 @@ const CanvasControler = (draw,getInitialState, options={}) => {
       const height = window.innerHeight - top;
 
       if (canvas.width !== width || canvas.height !== height) {
+        const estado = getEstado();
+        estado._changes++; // marca que houve uma mudança para atualizar o canvas
+
         canvas.width = width;
         canvas.height = height;
       }
@@ -101,11 +125,14 @@ const CanvasControler = (draw,getInitialState, options={}) => {
 
     // Timer que se auto-registra recursivamente
     const render = () => {
+      const estado = getEstado();
 
-      // Controle do desenho
-      frameCount++;
-      draw(context,getEstado());
-
+      // só garante que vai atualizar a cada mudança se o estado for modificado com mesclarEstado
+      if(estado._changes > 0)
+      {
+        draw(context,estado);
+        estado._changes = 0;
+      }
       // auto-registra novamente
       // TODO: só pedir um AnimationFrame se houve uma mudança mesmo para ser feita.
       animationFrameId = window.requestAnimationFrame(render);
