@@ -1,26 +1,54 @@
 import { mesclarEstado } from "../components/Canvas/CanvasControler";
 import ZoomableCanvas from "../components/Canvas/ZoomableCanvas";
-const AnotarImagem = () => {
+import { colisaoPoly, checkIntersection, colisaoRect, pontosRect,pontoMaisProximo } from "../geometria";
+const AnotarImagem = (props) => {
+
+    const defaultOptions = {
+        spanButton:"right", // left | middle | right | any
+        interactionStyle: "click", // click | drag
+        maxZoomScale:50.0,
+        minZoomScale:0.25,
+        //minDist: 0.01, // Distância mínima que irá aceitar entre pontos. Fator que decide quando remover pontos duplicados em um formato
+        minClickDist: 15 // Distância mínima para entender que clicou em um ponto
+    };
+    const options = props.options ? {...defaultOptions,...props.options} : defaultOptions;
+
+    /**=================================================================
+     *              FUNÇÕES QUE DESENHAM AS COISAS NA TELA
+     * =================================================================
+     */
 
     // Not affected by zooming and spanning
     const myuidraw = (ctx,estado) => {
 
     };
 
-    const drawRect = (ctx,ret) => {
-        let startx = ret.start.x;
-        let starty = ret.start.y;
-        let endx = ret.end.x;
-        let endy = ret.end.y;
+    const drawPoints = (ctx,points) => {
+        const prevfillStyle = ctx.fillStyle;
+        ctx.fillStyle = "rgba(255, 0, 0, 1.0)";
+        for(const point of points)
+		{
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
 
-        if(startx > endx) [startx,endx] = [endx,startx];
-        if(starty > endy) [starty,endy] = [endy,starty];
+            ctx.fill();
+        }
+        ctx.fillStyle = prevfillStyle ;
+    }
+    
+    const drawRect = (ctx,ret,selecionado) => {
+        const [a,b] = pontosRect(ret);
 
-        ctx.fillRect(startx,starty,endx-startx,endy-starty);
-        ctx.strokeRect(startx,starty,endx-startx,endy-starty);
+        ctx.fillRect(a.x, a.y, b.x-a.x, b.y-a.y);
+        ctx.strokeRect(a.x, a.y, b.x-a.x, b.y-a.y);
+
+        if(selecionado)
+        {
+            drawPoints(ctx,[a,b]);
+        }
     };
 
-    const drawPoly = (ctx,poly) => {
+    const drawPoly = (ctx,poly,selecionado) => {
 
         ctx.beginPath();
 
@@ -33,6 +61,11 @@ const AnotarImagem = () => {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+
+        if(selecionado)
+        {
+            drawPoints(ctx,poly.points);
+        }
     };
 
     const mydraw = (ctx,estado) => {
@@ -54,132 +87,354 @@ const AnotarImagem = () => {
         {
             ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
             ctx.strokeStyle = "rgba(127, 0, 0, 0.7)";
-            if(estado.desenhando.type == "rect") drawRect(ctx,estado.desenhando);
-            else if(estado.desenhando.type == "poly") drawPoly(ctx,estado.desenhando);
+            if(estado.desenhando.type == "rect") drawRect(ctx,estado.desenhando,true);
+            else if(estado.desenhando.type == "poly") drawPoly(ctx,estado.desenhando,true);
         }
 
         if(estado.elementos)
         {
-            ctx.fillStyle = "rgba(0, 255, 0, 0.3)";
-            ctx.strokeStyle = "rgba(0, 127, 0, 0.6)";
-            estado.elementos.map((e) => {
-                if(e.type == "rect") drawRect(ctx,e);
-                else if(e.type == "poly") drawPoly(ctx,e);
-            });
+            for(const e of estado.elementos)
+            {
+                const selecionado = estado.selecionado == e;
+                if(selecionado)
+                {
+                    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+                    ctx.strokeStyle = "rgba(127, 0, 0, 0.6)";
+                    ctx.lineWidth = 2.0;
+                }
+                else
+                {
+                    ctx.fillStyle = "rgba(0, 255, 0, 0.3)";
+                    ctx.strokeStyle = "rgba(0, 127, 0, 0.6)";
+                    ctx.lineWidth = 1.0;
+                }
+
+                if(e.type == "rect") drawRect(ctx,e,selecionado);
+                else if(e.type == "poly") drawPoly(ctx,e,selecionado);
+            }
         }
     };
 
+    /**=================================================================
+     *      FUNÇÕES QUE FAZEM CÁLCULOS E ENCONTRAM ELEMENTOS
+     * =================================================================
+     */
+
+    // Procura um elemento na posição especificada
+    const encontrarElemento = (elementos,posicao) =>
+    {
+        for(const e of elementos)
+        {
+            if(e.type == "rect")
+            {
+                if(colisaoRect(e,posicao)) return e;
+            }
+            else if(e.type == "poly")
+            {
+                if(colisaoPoly(e,posicao)) return e;
+            }
+        }
+
+        return false;
+    }
+
+    /**=================================================================
+     *      FUNÇÕES QUE LIDAM COM NOVOS ELEMENTOS SENDO DESENHADOS
+     * =================================================================
+     */
+
+    // Finalizar o desenho de um elemento, caso tenha algum
+    const desenhandoConfirmar = (elementos,elem) =>
+    {
+        console.log("DESENHANDO CONFIRMAR:"+elem.type);
+
+        if(elem.type == "poly" || elem.type == "rect")
+        {
+            elementos.push(elem);
+            return {
+                desenhando:false,
+                desenhandoCliques: 0,
+                elementos:elementos,
+                selecionado: false
+            };
+        }
+    };
+
+    // Faz com que o elemento ativo no momento seja cancelado, ou etapas de seu desenho sejam des-feitas
+    const desenhandoCancelar = (elem) =>
+    {
+        console.log("DESENHANDO CANCELAR:"+elem.type);
+
+        if(elem.type == "poly" && elem.points.length > 2)
+        {
+            elem.points.pop();
+            return {
+                desenhando:elem
+            };
+        }
+        else return {
+            desenhando:false,
+            desenhandoCliques: 0,
+            selecionado: false
+        };
+    }
+
+    // Inicia o desenho de um novo elemento.
+    const desenhandoNovo = (tipo,posicao) =>
+    {
+        console.log("DESENHANDO NOVO:"+tipo+",["+posicao.x+","+posicao.y+"]");
+
+        let elem = {};
+                
+        if(tipo == "rect") // A ferramenta ativa é desenhar retângulos
+        {
+            elem = {type:tipo,start:{x:posicao.x,y:posicao.y},end:{x:posicao.x,y:posicao.y}};
+        }
+        else if(tipo == "poly") // A ferramenta ativa é desenhar polígonos
+        {
+            elem = {type:tipo,points:[{x:posicao.x,y:posicao.y},{x:posicao.x,y:posicao.y}]};
+        }
+
+        // retorna o novo elemento como algo sendo desenhando no momento
+        return {
+            desenhando:elem,
+            desenhandoCliques: 0, // reseta o número de cliques
+            selecionado: false
+        };
+    }
+
+    // Adiciona um novo ponto ao polígono sendo desenhado
+    const desenhandoClique = (elem,posicao,ncliques) =>
+    {
+        console.log("DESENHANDO CLIQUE:"+elem.type+",["+posicao.x+","+posicao.y+"],"+ncliques);
+
+        if(elem.type == "poly") // Adiciona um ponto ao polígono
+        elem.points.push({x:posicao.x,y:posicao.y});
+
+        return {
+            desenhando:elem,
+            desenhandoCliques: ncliques+1, // registra que um novo clique foi realizado
+            selecionado: false
+        };
+    }
+
+    // Mover o ponto do que está sendo desenhado
+    const desenhandoMover = (elem,posicao) =>
+    {
+        if(elem.type == "rect") // Se é um retângulo, define o fim dele pela posição do mouse
+        {
+            elem.end.x = posicao.x;
+            elem.end.y = posicao.y;
+        }
+        // Se é um polígono, define a posição do último ponto pela posição do mouse
+        else if(elem.type == "poly") 
+        {
+            const p = elem.points[elem.points.length-1];
+            p.x = posicao.x;
+            p.y = posicao.y;
+        }
+
+        return {
+            desenhando:elem
+        };
+    }
+
+    /**=================================================================
+     *      FUNÇÕES QUE LIDAM COM ELEMENTOS SENDO EDITADOS
+     * =================================================================
+     */
+
+    // Clicou em um elemento selecionado
+    const selecionadoClique = (elem,posicao) =>
+    {
+        const points = elem.type == "rect" ? pontosRect(elem) 
+        : (elem.type == "poly" ? elem.points : [] );
+
+        const [minP,minSqrDist] = pontoMaisProximo(points,posicao);
+
+        if(minP != -1 && minSqrDist < options.minClickDist * options.minClickDist)
+        {
+            const retEstado = editandoPontoMover(elem,minP,posicao);
+            
+            return {...retEstado,...{
+                editandoPonto: minP,
+                desenhandoCliques: 0
+            }};
+        }
+
+        return false;
+    }
+     // Edita um ponto
+    const editandoPontoMover = (elem,ponto,posicao) =>
+    {
+        if(elem.type == "rect")
+        {
+            const rectPoints = pontosRect(elem);
+            
+            rectPoints[ponto].x = posicao.x;
+            rectPoints[ponto].y = posicao.y;
+
+            elem.start.x = rectPoints[0].x;
+            elem.start.y = rectPoints[0].y;
+
+            elem.end.x = rectPoints[1].x;
+            elem.end.y = rectPoints[1].y;
+            return {
+                selecionado: elem,
+                editandoPonto: ponto
+            }
+        }
+        else if(elem.type == "poly")
+        {
+            elem.points[ponto].x = posicao.x;
+            elem.points[ponto].y = posicao.y;
+
+            return {
+                selecionado: elem,
+                editandoPonto: ponto
+            }
+        }
+    }
+
+    const editandoPontoClique = (elem,ponto,ncliques) =>
+    {
+        return {
+            selecionado: elem,
+            editandoPonto: ponto,
+            desenhandoCliques: ncliques+1
+        };
+    }
+
+    const editandoPontoConfirmar = (elem,ponto) =>
+    {
+        return {
+            selecionado: elem,
+            editandoPonto: -1,
+            desenhandoCliques: 0
+        };
+    }
+
+    const editandoPontoCancelar = (elem,ponto) =>
+    {
+        return {
+            selecionado: elem,
+            editandoPonto: -1,
+            desenhandoCliques: 0
+        };
+    }
+
+    /**=================================================================
+     *       FUNÇÕES QUE LIDAM COM OS EVENTOS DO MOUSE E TECLADO
+     * =================================================================
+     */
+
     const onMouseDown = (e,estado) =>
     {
-        if(e.button == 0)
+        if(e.button == 0) // Clicou o botão esquerdo
         {
-            const mouse = estado.mouse;
-            const tipo = estado.tipoAtivo ? estado.tipoAtivo : "rect";
-
-            if(!estado.desenhando)
+            if(estado.selecionado && estado.editandoPonto != -1) // ponto de elemento selecionado sendo editado
             {
-                let elem = {};
-                
-                if(tipo == "rect")
-                {
-                    elem = {type:tipo,start:{x:mouse.x,y:mouse.y},end:{x:mouse.x,y:mouse.y}};
-                }
-                else if(tipo == "poly")
-                {
-                    elem = {type:tipo,points:[{x:mouse.x,y:mouse.y},{x:mouse.x,y:mouse.y}]};
-                }
-
-                return {
-                    desenhando:elem
-                };
+                return editandoPontoClique(estado.selecionado,estado.editandoPonto,estado.desenhandoCliques);
             }
-            else
+            else if(estado.desenhando) // Há halgo sendo desenhando
             {
-                let elem = estado.desenhando;
-
-                if(tipo == "poly")
+                return desenhandoClique(estado.desenhando,estado.mouse,estado.desenhandoCliques);
+            }
+            else // Não há nada sendo desenhando nem editado no momento
+            {
+                // Tem um selecionado e clicou
+                if(estado.selecionado)
                 {
-                    elem.points.push({x:mouse.x,y:mouse.y});
+                    const estadoModificado = selecionadoClique(estado.selecionado,estado.mouse);
+                    if(estadoModificado) return estadoModificado;
                 }
 
-                return {
-                    desenhando:elem
-                };
+                const elemClicado = encontrarElemento(estado.elementos,estado.mouse);
+
+                if(!elemClicado && !estado.selecionado)
+                {
+                    return desenhandoNovo(estado.ferramenta,estado.mouse);
+                }
+                else
+                {
+                    return {
+                        selecionado: elemClicado,
+                        editandoPonto: -1
+                    };
+                }
             }
         }
     };
 
     const onMouseMove = (e,estado) =>
     {
-        if(estado.desenhando)
+        const mouse = estado.mouse;
+        // Se deve movimentar o que está sendo desenhado
+        // Quando é interação 'click', irá mover mesmo sem estar clicado o mouse
+        // Quando é interação 'drag', só irá mover enquanto estiver clicado o botão esquerdo do mouse
+        const shouldMove = options.interactionStyle == "click" || (mouse.left && options.interactionStyle == "drag")
+
+        if(estado.selecionado && estado.editandoPonto != -1)
         {
-            const mouse = estado.mouse;
-            const elem = estado.desenhando;
-
-            if(elem.type == "rect" && mouse.left)
-            {
-                elem.end.x = mouse.x;
-                elem.end.y = mouse.y;
-            }
-            else if(elem.type == "poly")
-            {
-                const p = elem.points[elem.points.length-1];
-                p.x = mouse.x;
-                p.y = mouse.y;
-            }
-
-            return {
-                desenhando:elem
-            };
+            if(shouldMove)
+            return editandoPontoMover(estado.selecionado,estado.editandoPonto,estado.mouse);
+        }
+        else if(estado.desenhando) // Há algo sendo desenhando
+        {
+            if(shouldMove)
+            return desenhandoMover(estado.desenhando,mouse);
         }
     };
 
     const onMouseUp = (e,estado) =>
     {
-        if(e.button == 0 && estado.desenhando)
+        if(e.button == 0 && options.interactionStyle == "drag")
         {
-            const elem = estado.desenhando;
-         
-            if(elem.type == "rect")
+            if(estado.selecionado && estado.editandoPonto != -1)
             {
-                estado.elementos.push(elem);
-                return {
-                    desenhando:false,
-                    elementos:estado.elementos
-                };
+                return editandoPontoConfirmar(estado.selecionado,estado.editandoPonto);
             }
-            else if(elem.type == "poly")
+            else if(estado.desenhando && estado.desenhando.type == "rect") // Soltou o botão esquerdo do mouse e estava desenhando um retângulo
             {
-
+                return desenhandoConfirmar(estado.elementos,estado.desenhando);
             }
         }
+        
     };
 
-    const finishPoly = (e,estado) =>
-    {
-        let elem = estado.desenhando;
-        if(elem && elem.type == "poly")
-        {
-            estado.elementos.push(elem);
-            return {
-                desenhando:false,
-                elementos:estado.elementos
-            };
-        }
-    };
-
+    // o onClick é enviado após um onMouseDown e um onMouseUp ter sido enviado.
     const onClick = (e,estado) =>
     {
-        
-
-        if(e.button == 2)
+        if(estado.selecionado && estado.editandoPonto != -1)
         {
-            return finishPoly(e,estado);
+            const elem = estado.selecionado;
+            if(options.interactionStyle == "click")
+            {
+                if(e.button == 0 && estado.desenhandoCliques >= 1)   //  foi clicado o botão esquerdo
+                return editandoPontoConfirmar(elem,estado.editandoPonto);
+            }
+        }
+        else if(estado.desenhando) // Está desenhando algo e...
+        {
+            const elem = estado.desenhando;
+            if(options.interactionStyle == "click")
+            {
+                if((elem.type == "poly" && e.button == 2)   // 1. É um polígono e foi clicado o botão direito
+                || (elem.type == "rect" && e.button == 0 
+                    && estado.desenhandoCliques >= 1    ))   // 2. OU É um retângulo e foi clicado o botão esquerdo
+                return desenhandoConfirmar(estado.elementos,elem);
+            }
+            else if(options.interactionStyle == "drag")
+            {
+                if((elem.type == "poly" && e.button == 2 ))   // É um polígono e foi clicado o botão direito
+                return desenhandoConfirmar(estado.elementos,elem);
+            }
         }
         
+        // TESTE MOBILE, BOTÃO DO MEIO (TRÊS TOQUES) MUDA O TIPO A SER DESENHADO
         if(e.button == 1)
         {
-            return { tipoAtivo: estado.tipoAtivo == "rect" ? "poly" : "rect" };
+            return { ferramenta: estado.ferramenta == "rect" ? "poly" : "rect" };
         }
     };
 
@@ -188,35 +443,38 @@ const AnotarImagem = () => {
         console.log("Pressionado:"+e.key);
 
         if(e.key == "1")
-            return { tipoAtivo:"rect" };
+            return { ferramenta:"rect" };
         if(e.key == "2")
-            return { tipoAtivo:"poly" };
+            return { ferramenta:"poly" };
         if(e.key == "Enter")
         {
-            return finishPoly(e,estado);
+            if(estado.selecionado && estado.editandoPonto != -1)
+            return editandoPontoConfirmar(estado.selecionado,estado.editandoPonto);
+            else if(estado.desenhando)
+            return desenhandoConfirmar(estado.elementos,estado.desenhando);
         }
     };
 
     const onKeyDown = (e,estado) =>
     {
         if(e.key == "Escape" || e.key == "Esc")
-        {
-            return finishPoly(e,estado);
+        {            
+            if(estado.selecionado && estado.editandoPonto != -1)
+            return editandoPontoCancelar(estado.selecionado,estado.editandoPonto);
+            else if(estado.selecionado)
+            return { selecionado: false }
+            else if(estado.desenhando)
+            return desenhandoCancelar(estado.desenhando);
         }
         if(e.key == "z" && e.ctrlKey) // Deletar último elemento desenhado quando apertar ctrl+z
         {
+            if(estado.selecionado && estado.editandoPonto != -1)
+            {
+                return editandoPontoCancelar(estado.selecionado,estado.editandoPonto);
+            }
             if(estado.desenhando)
             {
-                if(estado.desenhando.type == "poly" && estado.desenhando.points.length > 2)
-                {
-                    estado.desenhando.points.pop();
-                    return {
-                    desenhando:estado.desenhando
-                    };
-                }
-                else return {
-                    desenhando:false
-                };
+                return desenhandoCancelar(estado.desenhando);
             }
             else if(estado.elementos.length > 0)
             {
@@ -233,8 +491,11 @@ const AnotarImagem = () => {
         // Só alterar o estado com mesclarEstado
         // Então o Canvas gerencia as mudanças assim decidindo re-desenhar
         mesclarEstado(estado,{
-            tipoAtivo:"rect",
+            ferramenta:"rect",
             desenhando:false,
+            desenhandoCliques: 0, // controlar número de cliques
+            selecionado: false, // elemento selecionado
+            editandoPonto: -1, // índice do ponto que está sendo editado no elemento selecionado
             elementos:[],
             imagemFundo: false,
             imagemFundoPos: {x:0,y:0},
@@ -277,7 +538,7 @@ const AnotarImagem = () => {
                 }
             });
         };
-        myImg.src = 'https://cdn.vercapas.com.br/covers/folha-de-s-paulo/2022/capa-jornal-folha-de-s-paulo-16-09-2022-c4a2010f.jpg';
+        myImg.src = props.imagem || 'https://cdn.vercapas.com.br/covers/folha-de-s-paulo/2022/capa-jornal-folha-de-s-paulo-16-09-2022-c4a2010f.jpg';
     };
 
     return (
@@ -293,11 +554,7 @@ const AnotarImagem = () => {
             onMouseUp:onMouseUp,
             onClick:onClick
         }}
-        options={{
-            spanButton:"right",
-            maxZoomScale:100.0,
-            minZoomScale:0.20
-        }}
+        options={options}
         />
     );
 };

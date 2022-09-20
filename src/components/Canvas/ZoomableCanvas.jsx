@@ -137,6 +137,15 @@ const ZoomableCanvas = (props) => {
         uidraw(ctx,estado);
     };
 
+    const isSpanningClick = (e,estado) => {
+        const spanningClick = estado.spanEnabled &&
+            ((spanButton == "any") ||
+            (spanButton == "left" && e.button == 0) ||
+            (spanButton == "middle" && e.button == 1) ||
+            (spanButton == "right" && e.button == 2));
+        return spanningClick;
+    }
+
     // ############################
     //          Eventos
     // ############################
@@ -149,11 +158,7 @@ const ZoomableCanvas = (props) => {
         const mouse = getMouse(e,estado);
         
 
-        const spanning = estado.spanEnabled &&
-        ((spanButton == "any") ||
-        (spanButton == "left" && mouse.left) ||
-        (spanButton == "middle" && mouse.middle) ||
-        (spanButton == "right" && mouse.right));
+        const spanning = isSpanningClick(e,estado);
 
         mesclarEstado(estado,{
             mouse:mouse,
@@ -219,9 +224,15 @@ const ZoomableCanvas = (props) => {
 
         if(!wasSpanning || (wasSpanning && !wasSpanned))
         {
-            // applyclick?
-            if(events.onClick) 
-            mesclarEstado(estado,events.onClick(e,estado));
+            // applyclick only if the span button is the same as this click event button
+            const spanningClick = isSpanningClick(e,estado);
+
+            if(spanningClick && events.onClick)
+            {
+                mesclarEstado(estado,events.onMouseDown(e,estado)); // Simulate all events, because they where not propagated
+                mesclarEstado(estado,events.onMouseUp(e,estado));
+                mesclarEstado(estado,events.onClick(e,estado));
+            }
         }
     };
 
@@ -275,6 +286,16 @@ const ZoomableCanvas = (props) => {
             delta:amount
             },estado);
     };
+    
+    const onClick = (e,estado) => {
+        const spanningClick = isSpanningClick(e,estado);
+
+        if(!spanningClick && events.onClick)
+        {
+            return events.onClick(e,estado);
+        }
+    };
+
     // Não é o jeito certo? idaí?
     const myGetInitialState = (estado) => {
 
@@ -298,7 +319,8 @@ const ZoomableCanvas = (props) => {
         onMouseMove:onMouseMove,
         onMouseUp:onMouseUp,
         onWheel:onWheel,
-        doZoom:doZoom
+        doZoom:doZoom,
+        onClick:onClick
     };
 
     for (const k in events) {

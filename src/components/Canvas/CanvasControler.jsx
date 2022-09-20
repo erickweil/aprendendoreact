@@ -182,7 +182,7 @@ const CanvasControler = (draw,getInitialState, options={}) => {
       window.cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", debounceHandleResize);
     }
-  }, [draw]);
+  }, [draw]); // Só vai re-chamar o useEffect se o draw mudar.
 
   return [doEvent,canvasRef];
 }

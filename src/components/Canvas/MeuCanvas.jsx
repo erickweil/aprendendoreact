@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {memo} from 'react'
 import CanvasControler from './CanvasControler'
 import TouchManager from "./TouchManager";
 import "./MeuCanvas.css"
@@ -23,7 +23,8 @@ const MeuCanvas = props => {
 
     const defaultOptions = {
         useTouchManager:true,
-        preventContextMenu:true
+        preventContextMenu:true,
+        contextMenuAsRightClick:true // Finge que o evento ContextMenu seja um botão direito do mouse
     };
     const options = _options ? {...defaultOptions,..._options} : defaultOptions;
 
@@ -35,8 +36,14 @@ const MeuCanvas = props => {
             if(options.preventContextMenu)
                 e.preventDefault(); // evitar abrir a janela contextMenu ao clicar o botão direito
 
+            if(options.contextMenuAsRightClick && events.onClick)
+            {
+                e.button = 2;
+                e.buttons = e.buttons | 2;
+                return doEvent(events.onClick,e);
+            }
             if(events.onContextMenu) 
-                return doEvent(events.onContextMenu,e);                
+                return doEvent(events.onContextMenu,e);
         }
     };
 
@@ -99,4 +106,5 @@ const MeuCanvas = props => {
     />;
 }
 
+//export default memo(MeuCanvas)
 export default MeuCanvas
