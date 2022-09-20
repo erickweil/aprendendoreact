@@ -77,7 +77,12 @@ const MeuCanvas = props => {
         // (Especialmente necessário para funcionar o pinch zoom + span)    
         touchManager.addEventListener("onTouchDown",(...args) => {myListeners.onMouseDown && myListeners.onMouseDown(...args)}, false);
         touchManager.addEventListener("onTouchMove",(...args) => {myListeners.onMouseMove && myListeners.onMouseMove(...args)}, false);
-        touchManager.addEventListener("onTouchUp",(...args) => {myListeners.onMouseUp && myListeners.onMouseUp(...args)}, false);
+        touchManager.addEventListener("onTouchUp",(...args) => {
+
+            myListeners.onMouseUp && myListeners.onMouseUp(...args);
+            myListeners.onClick && myListeners.onClick(...args);
+
+        }, false);
         touchManager.addEventListener("onTouchZoom",(...args) => {
             myListeners.doZoom && myListeners.doZoom(...args);
         }, false);

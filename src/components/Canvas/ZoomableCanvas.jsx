@@ -79,6 +79,14 @@ const ZoomableCanvas = (props) => {
 
     // Desenhar ou não algumas informações sobre a tela e o mouse
     let DEBUG_N = 0;
+    let DEBUG_TXTN = 0;
+    let DEBUG_TXT = "";
+    let DEBUG_TXT2 = "";
+    let DEBUG_TXT2N = 0;
+    let DEBUG_TXT3 = "";
+    let DEBUG_TXT3N = 0;
+    let DEBUG_TXT4 = "";
+    let DEBUG_TXT4N = 0;
     // Função que desenha tudo
     const mydraw = (ctx,estado) => {
         const w = estado.width;
@@ -133,6 +141,10 @@ const ZoomableCanvas = (props) => {
             DEBUG_N++;
 
             ctx.fillText("Changes:"+estado._changes, 200, 25);
+            ctx.fillText(DEBUG_TXT, 10, 80);
+            ctx.fillText(DEBUG_TXT2, 10, 80+50);
+            ctx.fillText(DEBUG_TXT3, 10, 80+100);
+            ctx.fillText(DEBUG_TXT4, 10, 80+150);
         }
         uidraw(ctx,estado);
     };
@@ -154,7 +166,8 @@ const ZoomableCanvas = (props) => {
     // onMouseUp - Soltou o mouse
     // onWheel e doZoom - Controlar o zoom
     const onMouseDown = (e,estado) => {
-
+        DEBUG_TXTN++
+        DEBUG_TXT = DEBUG_TXTN+" Down "+e.button+" "+e.pageX+","+e.pageY;
         const mouse = getMouse(e,estado);
         
 
@@ -172,6 +185,7 @@ const ZoomableCanvas = (props) => {
     };
 
     const onMouseMove = (e,estado) => {
+        DEBUG_TXT += ".";
         const mouse = getMouse(e,estado);
 
         if(estado.spanEnabled)
@@ -206,6 +220,8 @@ const ZoomableCanvas = (props) => {
     };
 
     const onMouseUp = (e,estado) => {
+        DEBUG_TXT2N++
+        DEBUG_TXT2 = DEBUG_TXT2N+" Up "+e.button+" "+e.pageX+","+e.pageY;
         const mouse = getMouse(e,estado);
 
         const wasSpanning = estado.spanning;
@@ -288,6 +304,8 @@ const ZoomableCanvas = (props) => {
     };
     
     const onClick = (e,estado) => {
+        DEBUG_TXT3N++;
+        DEBUG_TXT3 = DEBUG_TXT3N+" Click "+e.button+" "+e.pageX+","+e.pageY;
         const spanningClick = isSpanningClick(e,estado);
 
         if(!spanningClick && events.onClick)
