@@ -8,12 +8,14 @@ const AnotarImagem = (props) => {
         interactionStyle: "click", // click | drag
         maxZoomScale:50.0,
         minZoomScale:0.25,
+        baseLineWidth: 1.0, // SCREEN COORDS da largura da linha
+        selectedLineWidth: 5.0, // SCREEN COORDS da largura da linha quando selecionado
         DEBUG: false,
         //minDist: 0.01, // Distância mínima que irá aceitar entre pontos. Fator que decide quando remover pontos duplicados em um formato
-        minClickDist: 15 // Distância mínima para entender que clicou em um ponto
+        minClickDist: 32 // Distância mínima EM SCREEN COORDINATES para entender que clicou em um ponto
     };
     const options = props.options ? {...defaultOptions,...props.options} : defaultOptions;
-
+    const DEBUG = options.DEBUG;
     /**=================================================================
      *              FUNÇÕES QUE DESENHAM AS COISAS NA TELA
      * =================================================================
@@ -24,20 +26,28 @@ const AnotarImagem = (props) => {
 
     };
 
-    const drawPoints = (ctx,points,color) => {
+    const drawPoints = (ctx,points,color,scale) => {
         const prevfillStyle = ctx.fillStyle;
         ctx.fillStyle = color;
         for(const point of points)
 		{
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+            //tamanho do ponto é 25% do raio de clique aceitável de clique SCREEN COORDINATES
+            ctx.arc(point.x, point.y, options.minClickDist*0.25/scale, 0, 2 * Math.PI);
 
             ctx.fill();
+
+            // Desenha círculo da área aceitável do clique
+            if(DEBUG)
+            {
+                ctx.arc(point.x, point.y, options.minClickDist/scale, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
         }
         ctx.fillStyle = prevfillStyle ;
     }
     
-    const drawRect = (ctx,ret,selecionado,ponto) => {
+    const drawRect = (ctx,ret,selecionado,ponto,scale) => {
         const [a,b] = pontosRect(ret);
 
         ctx.fillRect(a.x, a.y, b.x-a.x, b.y-a.y);
@@ -45,17 +55,17 @@ const AnotarImagem = (props) => {
 
         if(selecionado)
         {
-            drawPoints(ctx,[a,b],"rgba(255, 0, 0, 1.0)");
+            drawPoints(ctx,[a,b],"rgba(255, 0, 0, 1.0)",scale);
 
             if(ponto == 0)
-            drawPoints(ctx,[a],"rgba(255, 255, 255, 1.0)");
+            drawPoints(ctx,[a],"rgba(255, 255, 255, 1.0)",scale);
 
             if(ponto == 1)
-            drawPoints(ctx,[b],"rgba(255, 255, 255, 1.0)");
+            drawPoints(ctx,[b],"rgba(255, 255, 255, 1.0)",scale);
         }
     };
 
-    const drawPoly = (ctx,poly,selecionado,ponto) => {
+    const drawPoly = (ctx,poly,selecionado,ponto,scale) => {
 
         ctx.beginPath();
 
@@ -71,10 +81,10 @@ const AnotarImagem = (props) => {
 
         if(selecionado)
         {
-            drawPoints(ctx,poly.points,"rgba(255, 0, 0, 1.0)");
+            drawPoints(ctx,poly.points,"rgba(255, 0, 0, 1.0)",scale);
 
             if(ponto != -1)
-            drawPoints(ctx,[poly.points[ponto]],"rgba(255, 255, 255, 1.0)");
+            drawPoints(ctx,[poly.points[ponto]],"rgba(255, 255, 255, 1.0)",scale);
         }
     };
 
@@ -92,15 +102,16 @@ const AnotarImagem = (props) => {
                 estado.imagemFundoSize.x,estado.imagemFundoSize.y);
         }
 
-        ctx.lineWidth = 2.0;
+        
         if(estado.desenhando)
         {
             ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
             ctx.strokeStyle = "rgba(127, 0, 0, 0.7)";
+            ctx.lineWidth = (options.selectedLineWidth)/estado.scale;
             if(estado.desenhando.type == "rect") 
-                drawRect(ctx,estado.desenhando,true,1);
+                drawRect(ctx,estado.desenhando,true,1,estado.scale);
             else if(estado.desenhando.type == "poly") 
-                drawPoly(ctx,estado.desenhando,true,estado.desenhando.points.length-1);
+                drawPoly(ctx,estado.desenhando,true,estado.desenhando.points.length-1,estado.scale);
         }
 
         if(estado.elementos)
@@ -112,17 +123,17 @@ const AnotarImagem = (props) => {
                 {
                     ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
                     ctx.strokeStyle = "rgba(127, 0, 0, 0.6)";
-                    ctx.lineWidth = 2.0;
+                    ctx.lineWidth = options.selectedLineWidth/estado.scale;
                 }
                 else
                 {
                     ctx.fillStyle = "rgba(0, 255, 0, 0.3)";
                     ctx.strokeStyle = "rgba(0, 127, 0, 0.6)";
-                    ctx.lineWidth = 1.0;
+                    ctx.lineWidth = options.baseLineWidth/estado.scale;
                 }
 
-                if(e.type == "rect") drawRect(ctx,e,selecionado,estado.editandoPonto);
-                else if(e.type == "poly") drawPoly(ctx,e,selecionado,estado.editandoPonto);
+                if(e.type == "rect") drawRect(ctx,e,selecionado,estado.editandoPonto,estado.scale);
+                else if(e.type == "poly") drawPoly(ctx,e,selecionado,estado.editandoPonto,estado.scale);
             }
         }
     };
@@ -257,14 +268,17 @@ const AnotarImagem = (props) => {
      */
 
     // Clicou em um elemento selecionado
-    const selecionadoClique = (elem,posicao) =>
+    const selecionadoClique = (elem,posicao,scale) =>
     {
         const points = elem.type == "rect" ? pontosRect(elem) 
         : (elem.type == "poly" ? elem.points : [] );
 
+        // Calcula o ponto mais próximo no formato, retorna a distância ao quadrado
         const [minP,minSqrDist] = pontoMaisProximo(points,posicao);
 
-        if(minP != -1 && minSqrDist < options.minClickDist * options.minClickDist)
+        // Se o clique está dentro da área aceitável ao redor do ponto mais próximo em SCREEN COORDS
+        // está multiplicando pela escala para que compare idependente do zoom
+        if(minP != -1 && Math.sqrt(minSqrDist)*scale < options.minClickDist)
         {
             const retEstado = editandoPontoMover(elem,minP,posicao);
             
@@ -326,6 +340,7 @@ const AnotarImagem = (props) => {
         };
     }
 
+    // não faz nada
     const editandoPontoCancelar = (elem,ponto) =>
     {
         return {
@@ -358,7 +373,7 @@ const AnotarImagem = (props) => {
                 // Tem um selecionado e clicou
                 if(estado.selecionado)
                 {
-                    const estadoModificado = selecionadoClique(estado.selecionado,estado.mouse);
+                    const estadoModificado = selecionadoClique(estado.selecionado,estado.mouse,estado.scale);
                     if(estadoModificado) return estadoModificado;
                 }
 
