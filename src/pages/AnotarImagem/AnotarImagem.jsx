@@ -1,12 +1,13 @@
 import { mesclarEstado } from "../../components/Canvas/CanvasControler";
 import ZoomableCanvas from "../../components/Canvas/ZoomableCanvas";
-import { pontoMaisProximo } from "./geometria";
+import { linhaMaisProxima, pontoMaisProximo } from "./geometria";
 import { newPoly } from "./Poligono";
 import { newRect } from "./Retangulo";
 const AnotarImagem = (props) => {
 
     const defaultOptions = {
         spanButton:"right", // left | middle | right | any
+        delButton:"right", // middle | right
         interactionStyle: "click", // click | drag
         maxZoomScale:50.0,
         minZoomScale:0.25,
@@ -268,6 +269,25 @@ const AnotarImagem = (props) => {
             }};
         }
 
+        // Calcula o a linha mais próximo no formato, retorna a distância ao quadrado
+        const [minLinha,minLinhaSqrDist] = linhaMaisProxima(points,posicao);
+        if(minLinha != -1 && Math.sqrt(minLinhaSqrDist)*scale < options.minClickDist)
+        {
+            // Adicionar novo ponto na linha
+            if(elem.type == "poly")
+            {
+                const posicaoAnterior = {x:posicao.x,y:posicao.y};
+                elem.addPoint(elem,minLinha+1,{x:posicao.x,y:posicao.y},options.minDist);
+
+                return {
+                    editandoPonto: minLinha+1,
+                    desenhandoCliques: 0,
+                    posicaoAnterior: posicaoAnterior,
+                    mouseClickOff: {x:0,y:0}
+                };
+            }
+        }
+
         // Se não clicou em nenhum ponto, então é porque quer arrastar,
         // mas verifica se clicou dentro do objeto primeiro né
         if(elem.colisao(elem,posicao)) {
@@ -335,6 +355,36 @@ const AnotarImagem = (props) => {
         };
     }
 
+    const editandoPontoDeletar = (elem,posicao,scale) =>
+    {
+        if(elem.type != "poly") return false;
+        
+        const points = elem.getPoints(elem);
+
+        // Calcula o ponto mais próximo no formato, retorna a distância ao quadrado
+        const [minP,minSqrDist] = pontoMaisProximo(points,posicao);
+
+        // Se o clique está dentro da área aceitável ao redor do ponto mais próximo em SCREEN COORDS
+        // está multiplicando pela escala para que compare idependente do zoom
+        if(minP != -1 && Math.sqrt(minSqrDist)*scale < options.minClickDist)
+        {
+            // Não deixa deletar quando é um triângulo
+            if(points.length > 3)
+            {
+                elem.removePoint(elem,minP);
+                return {
+                    selecionado: elem,
+                    editandoPonto: -1,
+                    desenhandoCliques: 0,
+                    posicaoAnterior: {x:0,y:0},
+                    mouseClickOff: {x:0,y:0}
+                };
+            }
+        }
+
+        // Clicou longe demais de qualquer ponto
+        return false;
+    }
 
     const arrastandoClique = (elem,ncliques) =>
     {
@@ -483,7 +533,7 @@ const AnotarImagem = (props) => {
     const onClick = (e,estado) =>
     {
         //console.log("onClick:"+e.button);
-        if(estado.selecionado && (estado.editandoPonto != -1 || estado.arrastando))
+        if(estado.selecionado)//&& (estado.editandoPonto != -1 || estado.arrastando))
         {
             const elem = estado.selecionado;
             if(options.interactionStyle == "click")
@@ -498,6 +548,14 @@ const AnotarImagem = (props) => {
                     mesclarEstado(estado,editandoPontoMover(elem,estado.editandoPonto,estado.mouse,estado.mouseClickOff));
                     return editandoPontoConfirmar(elem,estado.editandoPonto);
                 }
+            }
+
+            // Se não está editando ponto nem arrastando e clicou o botão de deletar
+            if(!estado.arrastando && estado.editandoPonto == -1 && 
+                ((options.delButton == "right" && e.button == 2) || (options.delButton == "middle" && e.button == 1))
+            )
+            {
+                return editandoPontoDeletar(elem,estado.mouse,estado.scale);
             }
         }
         else if(estado.desenhando) // Está desenhando algo e...
@@ -551,6 +609,8 @@ const AnotarImagem = (props) => {
 
     const onKeyDown = (e,estado) =>
     {
+        //console.log("Down:"+e.key);
+
         if(e.key == "Escape" || e.key == "Esc")
         {            
             if(estado.selecionado && estado.editandoPonto != -1)
@@ -562,7 +622,7 @@ const AnotarImagem = (props) => {
             else if(estado.desenhando)
             return desenhandoCancelar(estado.desenhando);
         }
-        if(e.key == "z" && e.ctrlKey) // Deletar último elemento desenhado quando apertar ctrl+z
+        else if(e.key == "z" && e.ctrlKey) // Deletar último elemento desenhado quando apertar ctrl+z
         {
             if(estado.selecionado && estado.editandoPonto != -1)
             {
@@ -581,6 +641,20 @@ const AnotarImagem = (props) => {
                 estado.elementos.pop();
                 return {
                     elementos:estado.elementos
+                };
+            }
+        }
+        if(e.key == "Delete")
+        {
+            if(estado.selecionado && estado.editandoPonto == -1 && !estado.arrastando)
+            {
+                // Pesquisa a posição do elemento selecionado na lista
+                // e remove ele pelo índice
+                const index = estado.elementos.indexOf(estado.selecionado);
+                estado.elementos.splice(index,1);
+                return {
+                    elementos:estado.elementos,
+                    selecionado: false
                 };
             }
         }
