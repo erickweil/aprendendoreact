@@ -1,10 +1,11 @@
 
-    export const pontoMaisProximo = (pontos,pos) => {
+    export const pontoMaisProximo = (pontos,pos,ignore = -1) => {
         
         let minponto = -1;
         let mindist = false;
         for(let i =0; i < pontos.length; i++)
         {
+            if(i == ignore) continue;
             const p = pontos[i];
 
             const dist = (p.x - pos.x)*(p.x - pos.x) + (p.y - pos.y)*(p.y - pos.y);
@@ -19,6 +20,22 @@
         return [minponto,mindist];
     }
 
+    // calcula o centro a partir de uma lista de pontos
+    export const centroPontos  = (pontos) => {
+        
+        const centro = {x:0,y:0};
+        
+        for(let i =0; i < pontos.length; i++)
+        {
+            const p = pontos[i];
+
+            centro.x += p.x;
+            centro.y += p.y;
+        }
+
+        return {x:centro.x / pontos.length,y:centro.y / pontos.length};
+    }
+
     // Retorna ponto superior esquerdo e inferior direito de um retângulo
     export const pontosRect = (ret) => {
         let startx = ret.start.x;
@@ -29,7 +46,7 @@
         if(startx > endx) [startx,endx] = [endx,startx];
         if(starty > endy) [starty,endy] = [endy,starty];
 
-        return [{x:startx,y:starty},{x:endx,y:endy}];
+        return [{x:startx,y:starty},{x:endx,y:starty},{x:endx,y:endy},{x:startx,y:endy}];
     };
 
     // Retorna se a posição pos está dentro do retângulo
@@ -50,9 +67,7 @@
     // 1 --> está no canto superior direito
     // 2 --> está no canto inferior direito
     // 3 --> está no canto inferior esquerdo
-    export const colisaoRect = (ret,pos) => {
-        const [a,b] = pontosRect(ret);
-
+    export const colisaoRect = (a,b,pos) => {
         if(
             pos.x < b.x && pos.x > a.x && // entre início e fim da caixa horizontalmente
             pos.y < b.y && pos.y > a.y    // entre início e fim da caixa verticalmente     

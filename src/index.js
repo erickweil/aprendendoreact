@@ -9,7 +9,7 @@ import JogoDaVida from "./pages/JogoDaVida";
 import Fibonacci from "./pages/Fibonacci";
 import Paginacao from './pages/Paginacao';
 import Formulario from './pages/Formulario';
-import AnotarImagem from './pages/AnotarImagem';
+import AnotarImagem from './pages/AnotarImagem/AnotarImagem';
 import Redirecionar from './pages/Redirecionar';
 import Inicio from "./pages/Inicio";
 import Ops from "./pages/Ops";
