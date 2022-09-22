@@ -8,6 +8,7 @@ import { colisaoRect, pontosRect } from "./geometria";
             start:{x:start.x,y:start.y},
             end:{x:end.x,y:end.y},
             onDraw: drawRect,
+            onDrawIncomplete: drawRect,
             getPoints: getRectPoints,
             colisao: (ret,pos) => { return colisaoRect(ret.start,ret.end,pos); },
             onEditPoint: editRectPoint,
@@ -85,11 +86,11 @@ import { colisaoRect, pontosRect } from "./geometria";
         ret.start = start;
         ret.end = end;
 
-        if(mergeDist)
-        {
-            if(ret.end.x - ret.start.x < mergeDist) ret.end.x = ret.start.x + mergeDist*2
-            if(ret.end.y - ret.start.y < mergeDist) ret.end.y = ret.start.y + mergeDist*2
-        }
+        //if(mergeDist)
+        //{
+            //if(ret.end.x - ret.start.x < mergeDist) ret.end.x = ret.start.x + mergeDist*2
+            //if(ret.end.y - ret.start.y < mergeDist) ret.end.y = ret.start.y + mergeDist*2
+        //}
         
         return true;
     }

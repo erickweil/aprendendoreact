@@ -8,21 +8,23 @@ const AnotarImagem = (props) => {
     const defaultOptions = {
         spanButton:"right", // left | middle | right | any
         delButton:"right", // middle | right
-        interactionStyle: "click", // click | drag
+        interactionStyle: "drag", // click | drag
         maxZoomScale:50.0,
         minZoomScale:0.25,
         baseLineWidth: 1.0, // SCREEN COORDS da largura da linha
-        selectedLineWidth: 5.0, // SCREEN COORDS da largura da linha quando selecionado
+        selectedLineWidth: 3.0, // SCREEN COORDS da largura da linha quando selecionado
+        pointRadius: 5,
         DEBUG: false,
-        colorStroke: "rgba(0, 127, 0, 0.6)",
+        colorStroke: "rgba(0, 127, 0, 1.0)",
         colorFill: "rgba(0, 255, 0, 0.3)",
-        colorDrawingStroke: "rgba(127, 0, 0, 0.7)",
+        colorDrawingStroke: "rgba(127, 0, 0, 1.0)",
         colorDrawingFill: "rgba(255, 0, 0, 0.4)",
-        colorSelectedStroke: "rgba(127, 0, 0, 0.6)",
+        colorSelectedStroke: "rgba(127, 0, 0, 1.0)",
         colorSelectedFill: "rgba(255, 0, 0, 0.3)",
         colorPoint: "rgba(255, 255, 255, 1.0)",
         colorActivePoint: "rgba(255, 255, 0, 1.0)",
         minDist: 0.1, // Distância mínima que irá aceitar entre pontos. afeta a criação e edição de formatos
+        minArea: 1, // Area mínima de um objeto
         minClickDist: 32 // Distância mínima EM SCREEN COORDINATES para entender que clicou em um ponto
     };
     const options = props.options ? {...defaultOptions,...props.options} : defaultOptions;
@@ -37,7 +39,6 @@ const AnotarImagem = (props) => {
         for(const point of points)
 		{
             ctx.beginPath();
-            //tamanho do ponto é 25% do raio de clique aceitável de clique SCREEN COORDINATES
             ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
 
             ctx.stroke();
@@ -51,6 +52,7 @@ const AnotarImagem = (props) => {
             }
         }
     }
+
     // Not affected by zooming and spanning
     const myuidraw = (ctx,estado) => {
 
@@ -68,14 +70,14 @@ const AnotarImagem = (props) => {
                 estado.imagemFundoSize.x,estado.imagemFundoSize.y);
         }
 
-        const pointRadius = (options.minClickDist * 0.25) / estado.scale;
+        const pointRadius = (options.pointRadius) / estado.scale;
         if(estado.desenhando)
         {
             ctx.fillStyle = options.colorDrawingFill;
             ctx.strokeStyle = options.colorDrawingStroke;
             ctx.lineWidth = (options.selectedLineWidth)/estado.scale;
 
-            estado.desenhando.onDraw(estado.desenhando,ctx);
+            estado.desenhando.onDrawIncomplete(estado.desenhando,ctx);
 
             const points = estado.desenhando.getPoints(estado.desenhando);
             ctx.fillStyle = options.colorPoint;
@@ -144,6 +146,26 @@ const AnotarImagem = (props) => {
     {
         console.log("DESENHANDO CONFIRMAR:"+elem.type);
 
+        if(elem.type == "poly")
+        {
+            // Precisa de pelo menos 3 pontos no polígono
+            if(elem.points.length < 4)
+                return false
+            // remove o último ponto porque sim.
+            elem.removePoint(elem,-1);
+        }
+        else if(elem.type == "rect")
+        {
+            const points = elem.getPoints(elem);
+            const largura = Math.abs(points[0].x - points[2].x);
+            const altura = Math.abs(points[0].y - points[2].y);
+            const area = largura * altura;
+            
+            // impede que um retângulo muito pequeno seja desenhado
+            if(area < options.minArea || largura < options.minDist || altura < options.minDist)
+            return desenhandoCancelar(elem);
+        }
+
         elementos.push(elem);
         return {
             desenhando:false,
@@ -158,6 +180,17 @@ const AnotarImagem = (props) => {
     {
         console.log("DESENHANDO CANCELAR:"+elem.type);
 
+        return {
+            desenhando:false,
+            desenhandoCliques: 0,
+            selecionado: false
+        };
+    }
+
+    const desenhandoDesfazer = (elem) =>
+    {
+        console.log("DESENHANDO DESFAZER:"+elem.type);
+
         if(elem.type == "poly" && elem.points.length > 2)
         {
             elem.removePoint(elem,-1);
@@ -165,11 +198,7 @@ const AnotarImagem = (props) => {
                 desenhando:elem
             };
         }
-        else return {
-            desenhando:false,
-            desenhandoCliques: 0,
-            selecionado: false
-        };
+        else return desenhandoCancelar(elem);
     }
 
     // Inicia o desenho de um novo elemento.
@@ -182,7 +211,7 @@ const AnotarImagem = (props) => {
         if(tipo == "rect") newWhat = newRect;
         else if(tipo == "poly") newWhat = newPoly;
 
-        let elem = newWhat(posicao,{x:posicao.x+options.minDist*2,y:posicao.y+options.minDist*2});
+        let elem = newWhat(posicao,{x:posicao.x,y:posicao.y});
         // retorna o novo elemento como algo sendo desenhando no momento
         return {
             desenhando:elem,
@@ -271,7 +300,7 @@ const AnotarImagem = (props) => {
 
         // Calcula o a linha mais próximo no formato, retorna a distância ao quadrado
         const [minLinha,minLinhaSqrDist] = linhaMaisProxima(points,posicao);
-        if(minLinha != -1 && Math.sqrt(minLinhaSqrDist)*scale < options.minClickDist)
+        if(minLinha != -1 && Math.sqrt(minLinhaSqrDist)*scale < options.minClickDist*0.25) // menos distância da linha
         {
             // Adicionar novo ponto na linha
             if(elem.type == "poly")
@@ -500,7 +529,7 @@ const AnotarImagem = (props) => {
         }
         else if(estado.desenhando) // Há algo sendo desenhando
         {
-            if(shouldMove)
+            // if(shouldMove) Desenhar polígono é sempre modo interação click.
             return desenhandoMover(estado.desenhando,mouse);
         }
     };
@@ -634,7 +663,7 @@ const AnotarImagem = (props) => {
             }
             else if(estado.desenhando)
             {
-                return desenhandoCancelar(estado.desenhando);
+                return desenhandoDesfazer(estado.desenhando);
             }
             else if(estado.elementos.length > 0)
             {
@@ -644,7 +673,7 @@ const AnotarImagem = (props) => {
                 };
             }
         }
-        if(e.key == "Delete")
+        if(e.key == "Delete" || e.key == "d")
         {
             if(estado.selecionado && estado.editandoPonto == -1 && !estado.arrastando)
             {

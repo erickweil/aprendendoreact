@@ -5,7 +5,8 @@ import { centroPontos, colisaoPoly, pontoMaisProximo } from "./geometria";
         return {
             type:"poly",
             points:points.map((p)=>{return {x:p.x,y:p.y}}),
-            onDraw: drawPoly,
+            onDraw: (poly,ctx) => {return drawPoly(poly,ctx,true)},
+            onDrawIncomplete:  (poly,ctx) => {return drawPoly(poly,ctx,false)},
             getPoints: getPolyPoints,
             colisao: colisaoPoly,
             onEditPoint: editPolyPoint,
@@ -16,7 +17,14 @@ import { centroPontos, colisaoPoly, pontoMaisProximo } from "./geometria";
         };
     };
 
-    const drawPoly = (poly,ctx) => {
+    const drawLines = (ctx,points,start=0,end=-1) => {
+        if(end == -1) end = points.length;
+
+        
+
+    }
+
+    const drawPoly = (poly,ctx,complete) => {
         ctx.beginPath();
 
         for(let i=0;i<poly.points.length;i++)
@@ -25,7 +33,8 @@ import { centroPontos, colisaoPoly, pontoMaisProximo } from "./geometria";
 			ctx.lineTo(p.x,p.y);
 		}
 
-        ctx.closePath();
+        if(complete)
+            ctx.closePath();
         ctx.fill();
         ctx.stroke();
     };
