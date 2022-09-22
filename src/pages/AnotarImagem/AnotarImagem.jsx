@@ -781,18 +781,23 @@ const AnotarImagem = (props) => {
         (estado.selecionado && estado.arrastando) ||
         estado.desenhando;
 
-        if(!estado.mouseDentro && editandoAlgumaCoisa)
+        const W = estado.width;
+        const H = estado.height;
+        const offLeft = estado.offsetLeft;
+        const offTop = estado.offsetTop;
+        const corner = {x: offLeft, y: offTop};
+        let distBorda = options.minClickDist;
+
+        if(!estado.mouseDentro)
+        distBorda = distBorda * 10
+
+        if(editandoAlgumaCoisa)
         {
-            const W = estado.width;
-            const H = estado.height;
-            const offLeft = estado.offsetLeft;
-            const offTop = estado.offsetTop;
-            const corner = {x: offLeft, y: offTop};
-            
-            if(estado.mouse.pageX+100 > corner.x + W) off.x++;
-            if(estado.mouse.pageX-100 < corner.x) off.x--;
-            if(estado.mouse.pageY+100 > corner.y + H) off.y++;
-            if(estado.mouse.pageY-100 < corner.y) off.y--;
+            // Se o mouse está bem perto da borda enquanto edita algo, desloca a tela
+            if(estado.mouse.pageX+distBorda > corner.x + W) off.x++;
+            if(estado.mouse.pageX-distBorda < corner.x) off.x--;
+            if(estado.mouse.pageY+distBorda > corner.y + H) off.y++;
+            if(estado.mouse.pageY-distBorda < corner.y) off.y--;
         }
 
         if(off.x != 0 || off.y != 0)

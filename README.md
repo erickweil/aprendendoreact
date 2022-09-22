@@ -61,6 +61,9 @@
 - Duplicar, Ctrl+c Ctrl+v
 - Anotações por imagem
 - Exibir cursor correto de acordo com ação
+- Impedir que desenhe fora da área da imagem
+- Informações que auxiliam utilização ao passar o mouse por cima
+- Barra de rolagem na tela
 - Mensagens de status da ação
 - Possibilitar campos de texto em cada formato
 - Categorias com cores
