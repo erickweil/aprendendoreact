@@ -41,7 +41,7 @@ export function pageToZoomCanvas(p,offsetLeft,offsetTop,span,scale)
 const ZoomableCanvas = (props) => {
 
     console.log("Criou o ZoomableCanvas");
-    const { uidraw, draw, events, getInitialState, options:_options, ...rest } = props
+    const { uidraw, draw, everyFrame, events, getInitialState, options:_options, ...rest } = props
 
     const defaultOptions = {
         DEBUG: false,
@@ -347,6 +347,7 @@ const ZoomableCanvas = (props) => {
     }
     return <MeuCanvas 
     draw={mydraw}
+    everyFrame={everyFrame}
     getInitialState={myGetInitialState}
     events={myListeners}
     options={options} />;

@@ -1,45 +1,60 @@
-import { colisaoRect, pontosRect } from "./geometria";
+import { colisaoRect } from "./geometria";
 
 // ############################ RETÂNGULOS #########################
     // Cria um novo retângulo
     export const newRect = (start,end) => {
         return {
             type:"rect",
-            start:{x:start.x,y:start.y},
-            end:{x:end.x,y:end.y},
+            pos: {x:start.x,y:start.y},
+            width: Math.abs(end.x - start.x),
+            height: Math.abs(end.y - start.y),
+            // [p00,p10,p11,p01] - anti-horário
+            points: [{x:start.x,y:start.y},{x:end.x,y:start.y},{x:end.x,y:end.y},{x:start.x,y:end.y}],
             onDraw: drawRect,
             onDrawIncomplete: drawRect,
             getPoints: getRectPoints,
-            colisao: (ret,pos) => { return colisaoRect(ret.start,ret.end,pos); },
+            colisao: (ret,pos) => { return colisaoRect(ret.pos,{x:ret.pos.x + ret.width,y:ret.pos.y + ret.height},pos); },
             onEditPoint: editRectPoint,
             getCenter: (ret) => { return { 
-                    x:(ret.start.x + ret.end.x)/2.0,
-                    y:(ret.start.y + ret.end.y)/2.0
+                    x:ret.pos.x + ret.width/2.0,
+                    y:ret.pos.y + ret.height/2.0
                 };
             },
             setCenter: setRectCenter,
             addPoint: () => { return false; },
-            removePoint: () => {}
+            removePoint: () => {},
+            getArea: getRectArea,
+            getDimensions: getRectDimensions
         };
     };
 
-    const drawRect = (ret,ctx) => {        
-        const [p00,p10,p11,p01] = pontosRect(ret);
-        const a = p00;
-        const b = p11;
+    const calcPointsAgain = (ret) => {
+        ret.points[0].x = ret.pos.x;
+        ret.points[0].y = ret.pos.y;
 
-        ctx.fillRect(a.x, a.y, b.x-a.x, b.y-a.y);
-        ctx.strokeRect(a.x, a.y, b.x-a.x, b.y-a.y);
+        ret.points[1].x = ret.pos.x + ret.width;
+        ret.points[1].y = ret.pos.y;
+
+        ret.points[2].x = ret.pos.x + ret.width;
+        ret.points[2].y = ret.pos.y + ret.height;
+
+        ret.points[3].x = ret.pos.x;
+        ret.points[3].y = ret.pos.y + ret.height;
+    }
+
+    const drawRect = (ret,ctx) => {
+        ctx.fillRect(ret.pos.x, ret.pos.y, ret.width, ret.height);
+        ctx.strokeRect(ret.pos.x, ret.pos.y, ret.width, ret.height);
     };
 
     const getRectPoints = (ret) => {
-        return pontosRect(ret);        
+        return ret.points;
     };
 
     const editRectPoint = (ret,ponto,posicao, mergeDist) => {
         if(ponto == -1) ponto = 2;
         // [p00,p10,p11,p01] - anti-horário
-        const rectPoints = pontosRect(ret);
+        const rectPoints = ret.points;//pontosRect(ret);
         const p00 = 0, p10 = 1, p11 = 2, p01 = 3;
 
         rectPoints[ponto].x = posicao.x;
@@ -83,8 +98,9 @@ import { colisaoRect, pontosRect } from "./geometria";
             if(p.y > end.y) end.y = p.y;
         }
 
-        ret.start = start;
-        ret.end = end;
+        ret.pos = start;
+        ret.width = end.x - start.x;
+        ret.height = end.y - start.y;
 
         //if(mergeDist)
         //{
@@ -99,9 +115,17 @@ import { colisaoRect, pontosRect } from "./geometria";
         const atual = ret.getCenter(ret);
         const diff = {x: center.x - atual.x, y: center.y - atual.y};
 
-        ret.start.x += diff.x;
-        ret.start.y += diff.y;
+        ret.pos.x += diff.x;
+        ret.pos.y += diff.y;
 
-        ret.end.x += diff.x;
-        ret.end.y += diff.y;
+        calcPointsAgain(ret);
+    }
+
+    const getRectArea = (ret) => {
+        const [largura,altura] = ret.getDimensions(ret)
+        return largura * altura;
+    }
+
+    const getRectDimensions = (ret) => {
+        return [ret.width,ret.height]
     }

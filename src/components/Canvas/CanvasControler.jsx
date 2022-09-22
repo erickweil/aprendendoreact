@@ -66,7 +66,7 @@ export function pageToCanvas(p,offsetLeft,offsetTop)
 Canvas Controler, handles resizing and animationframe callbacks
 also handles state using useRef only... to prevent re-renders
 */
-const CanvasControler = (draw,getInitialState, options={}) => {
+const CanvasControler = (draw,everyFrame,getInitialState, options={}) => {
   
   
   //const [estado,setEstado] = useState(null);
@@ -168,6 +168,9 @@ const CanvasControler = (draw,getInitialState, options={}) => {
         draw(context,estado);
         estado._changes = 0;
       }
+
+      if(everyFrame)
+      mesclarEstado(estado,everyFrame(estado));
       // auto-registra novamente
       // TODO: só pedir um AnimationFrame se houve uma mudança mesmo para ser feita.
       animationFrameId = window.requestAnimationFrame(render);

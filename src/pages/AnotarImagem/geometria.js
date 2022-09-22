@@ -84,7 +84,7 @@
     }
 
     // Retorna ponto superior esquerdo e inferior direito de um retângulo
-    export const pontosRect = (ret) => {
+    /*export const pontosRect = (ret) => {
         let startx = ret.start.x;
         let starty = ret.start.y;
         let endx = ret.end.x;
@@ -94,7 +94,7 @@
         if(starty > endy) [starty,endy] = [endy,starty];
 
         return [{x:startx,y:starty},{x:endx,y:starty},{x:endx,y:endy},{x:startx,y:endy}];
-    };
+    };*/
 
     // Retorna se a posição pos está dentro do retângulo
     // retorna 3 valores

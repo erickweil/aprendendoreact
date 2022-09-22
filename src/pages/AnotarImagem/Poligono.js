@@ -13,7 +13,9 @@ import { centroPontos, colisaoPoly, pontoMaisProximo } from "./geometria";
             getCenter: (poly) => { return centroPontos(poly.points);},
             setCenter: setPolyCenter,
             addPoint: addPolyPoint,
-            removePoint: removePolyPoint
+            removePoint: removePolyPoint,
+            getArea: getPolyArea,
+            getDimensions: getPolyDimensions
         };
     };
 
@@ -109,4 +111,12 @@ import { centroPontos, colisaoPoly, pontoMaisProximo } from "./geometria";
             // from the starting index
             poly.points.splice(indice, 1);
         }
+    }
+
+    const getPolyArea = (poly) => {
+        return 0;
+    }
+
+    const getPolyDimensions = (poly) => {
+        return [0,0]
     }
