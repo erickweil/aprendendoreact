@@ -1,0 +1,23 @@
+.framecontainer {
+
+    position: relative;
+}
+
+.framebackground,
+.frameinfo {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+}
+.frameinfo {
+    z-index: 10;
+    pointer-events: none;
+}
+
+.frameinfocontent {
+    pointer-events: auto;
+    display: inline-block;
+}

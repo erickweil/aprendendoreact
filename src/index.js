@@ -9,7 +9,7 @@ import JogoDaVida from "./pages/JogoDaVida";
 import Fibonacci from "./pages/Fibonacci";
 import Paginacao from './pages/Paginacao';
 import Formulario from './pages/Formulario';
-import AnotarImagem from './pages/AnotarImagem/AnotarImagem';
+import PaginaAnotarImagem from './pages/PaginaAnotarImagem';
 import Redirecionar from './pages/Redirecionar';
 import Inicio from "./pages/Inicio";
 import Ops from "./pages/Ops";
@@ -30,7 +30,7 @@ export default function App() {
           <Route path="jogodavida" element={<JogoDaVida />} />
           <Route path="paginacao" element={<Paginacao />} />
           <Route path="formulario" element={<Formulario />} />
-          <Route path="anotarimagem" element={<AnotarImagem imagem="https://acervo.folha.uol.com.br/files/flip/7/2/42/73/4734202/original/4734202.png" />} />
+          <Route path="anotarimagem" element={<PaginaAnotarImagem />} />
           <Route path="*" element={<Ops />} />
         </Route>
       </Routes>

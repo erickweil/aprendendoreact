@@ -1,5 +1,5 @@
-import { mesclarEstado } from "../../components/Canvas/CanvasControler";
-import ZoomableCanvas from "../../components/Canvas/ZoomableCanvas";
+import { mesclarEstado } from "../Canvas/CanvasControler";
+import ZoomableCanvas from "../Canvas/ZoomableCanvas";
 import { linhaMaisProxima, pontoMaisProximo } from "./geometria";
 import { newPoly } from "./Poligono";
 import { newRect } from "./Retangulo";
@@ -25,7 +25,8 @@ const AnotarImagem = (props) => {
         colorActivePoint: "rgba(255, 255, 0, 1.0)",
         minDist: 1, // Distância mínima em pixels que irá aceitar entre pontos. afeta a criação e edição de formatos
         minArea: 100, // Area mínima em pixels de um objeto
-        minClickDist: 32 // Distância mínima EM SCREEN COORDINATES para entender que clicou em um ponto
+        minClickDist: 32, // Distância mínima EM SCREEN COORDINATES para entender que clicou em um ponto
+        spanSpeed: 15
     };
     const options = props.options ? {...defaultOptions,...props.options} : defaultOptions;
     const DEBUG = options.DEBUG;
@@ -35,7 +36,7 @@ const AnotarImagem = (props) => {
      * =================================================================
      */
 
-    const drawPoints = (ctx,points,radius) => {
+    const drawPoints = (ctx,points,radius,scale) => {
         for(const point of points)
 		{
             ctx.beginPath();
@@ -47,7 +48,7 @@ const AnotarImagem = (props) => {
             // Desenha círculo da área aceitável do clique
             if(DEBUG)
             {
-                ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
+                ctx.arc(point.x, point.y, options.minClickDist / scale, 0, 2 * Math.PI);
                 ctx.stroke();
             }
         }
@@ -70,7 +71,8 @@ const AnotarImagem = (props) => {
                 estado.imagemFundoSize.x,estado.imagemFundoSize.y);
         }
 
-        const pointRadius = (options.pointRadius) / estado.scale;
+        const scale = estado.scale;
+        const pointRadius = (options.pointRadius) / scale;
         if(estado.desenhando)
         {
             ctx.fillStyle = options.colorDrawingFill;
@@ -81,9 +83,9 @@ const AnotarImagem = (props) => {
 
             const points = estado.desenhando.getPoints(estado.desenhando);
             ctx.fillStyle = options.colorPoint;
-            drawPoints(ctx,points,pointRadius);
+            drawPoints(ctx,points,pointRadius,scale);
             ctx.fillStyle = options.colorActivePoint;
-            drawPoints(ctx,[points[estado.desenhando.type == "rect" ? 2 : points.length-1]],pointRadius);
+            drawPoints(ctx,[points[estado.desenhando.type == "rect" ? 2 : points.length-1]],pointRadius,scale);
         }
 
         if(estado.elementos)
@@ -110,7 +112,7 @@ const AnotarImagem = (props) => {
                 {
                     const points = e.getPoints(e);
                     ctx.fillStyle = estado.arrastando ? options.colorActivePoint : options.colorPoint;
-                    drawPoints(ctx,e.getPoints(e),pointRadius);                    
+                    drawPoints(ctx,e.getPoints(e),pointRadius,scale);                    
                     
                     if(estado.editandoPonto != -1)
                     {
@@ -119,10 +121,10 @@ const AnotarImagem = (props) => {
                         if(e.type == "rect" && estado.editandoPonto >= 4)
                         {
                             // destacar os dois pontos que fazem parte da linha sendo editada
-                            drawPoints(ctx,[points[estado.editandoPonto%4],points[(estado.editandoPonto+1)%4]],pointRadius);
+                            drawPoints(ctx,[points[estado.editandoPonto%4],points[(estado.editandoPonto+1)%4]],pointRadius,scale);
                         }
                         else
-                        drawPoints(ctx,[points[estado.editandoPonto]],pointRadius);
+                        drawPoints(ctx,[points[estado.editandoPonto]],pointRadius,scale);
                     }
                 }
             }
@@ -789,7 +791,7 @@ const AnotarImagem = (props) => {
         let distBorda = options.minClickDist;
 
         if(!estado.mouseDentro)
-        distBorda = distBorda * 10
+        distBorda = distBorda * 2
 
         if(editandoAlgumaCoisa)
         {
@@ -804,14 +806,66 @@ const AnotarImagem = (props) => {
         {
             const span = estado.span;
 
-            off.x = (off.x / estado.scale) * 15;
-            off.y = (off.y / estado.scale) * 15;
+            off.x = (off.x / estado.scale) * options.spanSpeed;
+            off.y = (off.y / estado.scale) * options.spanSpeed;
 
             return {
                 span:{x:span.x + off.x, y:span.y + off.y}
             };
         }
     }
+
+    const imagemCarregou = (estado,myImg,url) => {
+        let imgW = myImg.naturalWidth;
+        let imgH = myImg.naturalHeight;
+
+        const W = estado.width;
+        const H = estado.height;
+
+        let scaleX = 1;
+        if (imgW > W)
+            scaleX = W/imgW;
+
+        let scaleY = 1;
+        if (imgH > H)
+            scaleY = H/imgH;
+
+        let scale = scaleY;
+        if(scaleX < scaleY)
+            scale = scaleX;
+        
+        if(!scale)
+        scale = 1;
+
+        //imgH = imgH*scale;
+        //imgW = imgW*scale; 
+        
+        mesclarEstado(estado,{
+            imagemFundo: myImg,
+            imagemFundoUrl: url,
+            imagemFundoPos: {
+                x:0,
+                y:0
+            },
+            imagemFundoSize: {
+                x:imgW,
+                y:imgH
+            },
+            scale:scale,
+            span:{
+                x:-((W/2 - (imgW/2 * scale))/scale ),
+                y:0,
+            }
+        });
+    };
+
+    const carregarImagem = (estado,url) => {
+        const myImg = new Image();
+        myImg.onload = () => {
+            imagemCarregou(estado,myImg,url);
+        };
+        myImg.src = url;
+    };
 
     
     const getInitialState = (estado) => {
@@ -834,56 +888,20 @@ const AnotarImagem = (props) => {
             mouseDentro: true
         });
 
-        const myImg = new Image();
-        myImg.onload = () => {
-
-            let imgW = myImg.naturalWidth;
-            let imgH = myImg.naturalHeight;
-
-            const W = estado.width;
-            const H = estado.height;
-
-            let scaleX = 1;
-            if (imgW > W)
-                scaleX = W/imgW;
-
-            let scaleY = 1;
-            if (imgH > H)
-                scaleY = H/imgH;
-
-            let scale = scaleY;
-            if(scaleX < scaleY)
-                scale = scaleX;
-            
-            if(!scale)
-            scale = 1;
-
-            //imgH = imgH*scale;
-            //imgW = imgW*scale; 
-            
-            mesclarEstado(estado,{
-                imagemFundo: myImg,
-                imagemFundoPos: {
-                    x:0,
-                    y:0
-                },
-                imagemFundoSize: {
-                    x:imgW,
-                    y:imgH
-                },
-                scale:scale,
-                span:{
-                    x:estado.span.x-((W/2 - (imgW/2 * scale))/scale ),
-                    y:estado.span.y,
-                }
-            });
-        };
-        myImg.src = props.imagem || 'https://cdn.vercapas.com.br/covers/folha-de-s-paulo/2022/capa-jornal-folha-de-s-paulo-16-09-2022-c4a2010f.jpg';
+        carregarImagem(estado,props.imagem);
     };
+
+    const onPropsChange = (estado) => {
+        if(!estado.imagemFundo || props.imagem != estado.imagemFundoUrl)
+        {
+            carregarImagem(estado,props.imagem);
+        }
+    }
 
     return (
         <ZoomableCanvas
         getInitialState={getInitialState}
+        onPropsChange={onPropsChange}
         uidraw={myuidraw}
         draw={mydraw}
         everyFrame={everyFrame}

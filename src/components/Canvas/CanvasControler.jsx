@@ -66,7 +66,7 @@ export function pageToCanvas(p,offsetLeft,offsetTop)
 Canvas Controler, handles resizing and animationframe callbacks
 also handles state using useRef only... to prevent re-renders
 */
-const CanvasControler = (draw,everyFrame,getInitialState, options={}) => {
+const CanvasControler = (draw,everyFrame,getInitialState, onPropsChange, options={}) => {
   
   
   //const [estado,setEstado] = useState(null);
@@ -89,6 +89,14 @@ const CanvasControler = (draw,everyFrame,getInitialState, options={}) => {
     getInitialState(novoEstado);
 
     canvasRef.current.estado = novoEstado;
+  }
+  else
+  {
+    if(onPropsChange)
+    {
+      console.log("onPropsChange");
+      onPropsChange(canvasRef.current.estado);
+    }
   }
 
   // GetEstado
@@ -143,8 +151,8 @@ const CanvasControler = (draw,everyFrame,getInitialState, options={}) => {
         mesclarEstado(estado,{
           width:width,
           height:height,
-          offsetLeft:canvas.offsetLeft,
-          offsetTop:canvas.offsetTop
+          offsetLeft:left /*canvas.offsetLeft*/,
+          offsetTop:top /*canvas.offsetTop*/
         });
       }
     };
@@ -161,10 +169,11 @@ const CanvasControler = (draw,everyFrame,getInitialState, options={}) => {
       {
         mesclarEstado(estado,{
           width:canvas.width,
-          height:canvas.height,
-          offsetLeft:canvas.offsetLeft,
-          offsetTop:canvas.offsetTop
+          height:canvas.height
+          //offsetLeft:canvas.offsetLeft,
+          //offsetTop:canvas.offsetTop
         });
+
         draw(context,estado);
         estado._changes = 0;
       }

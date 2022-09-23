@@ -41,7 +41,7 @@ export function pageToZoomCanvas(p,offsetLeft,offsetTop,span,scale)
 const ZoomableCanvas = (props) => {
 
     console.log("Criou o ZoomableCanvas");
-    const { uidraw, draw, everyFrame, events, getInitialState, options:_options, ...rest } = props
+    const { uidraw, draw, everyFrame, events, getInitialState, onPropsChange, options:_options, ...rest } = props
 
     const defaultOptions = {
         DEBUG: false,
@@ -166,8 +166,11 @@ const ZoomableCanvas = (props) => {
     // onMouseUp - Soltou o mouse
     // onWheel e doZoom - Controlar o zoom
     const onMouseDown = (e,estado) => {
-        DEBUG_TXTN++
-        DEBUG_TXT = DEBUG_TXTN+" Down "+e.button+" "+e.pageX+","+e.pageY;
+        if(DEBUG)
+        {
+            DEBUG_TXTN++
+            DEBUG_TXT = DEBUG_TXTN+" Down "+e.button+" "+e.pageX+","+e.pageY;
+        }
         const mouse = getMouse(e,estado);
         
 
@@ -185,7 +188,8 @@ const ZoomableCanvas = (props) => {
     };
 
     const onMouseMove = (e,estado) => {
-        DEBUG_TXT += ".";
+        if(DEBUG) DEBUG_TXT += ".";
+
         const mouse = getMouse(e,estado);
 
         if(estado.spanEnabled)
@@ -220,8 +224,11 @@ const ZoomableCanvas = (props) => {
     };
 
     const onMouseUp = (e,estado) => {
-        DEBUG_TXT2N++
-        DEBUG_TXT2 = DEBUG_TXT2N+" Up "+e.button+" "+e.pageX+","+e.pageY;
+        if(DEBUG)
+        {
+            DEBUG_TXT2N++
+            DEBUG_TXT2 = DEBUG_TXT2N+" Up "+e.button+" "+e.pageX+","+e.pageY;
+        }
         const mouse = getMouse(e,estado);
 
         const wasSpanning = estado.spanning;
@@ -304,8 +311,11 @@ const ZoomableCanvas = (props) => {
     };
     
     const onClick = (e,estado) => {
-        DEBUG_TXT3N++;
-        DEBUG_TXT3 = DEBUG_TXT3N+" Click "+e.button+" "+e.pageX+","+e.pageY;
+        if(DEBUG)
+        {
+            DEBUG_TXT3N++;
+            DEBUG_TXT3 = DEBUG_TXT3N+" Click "+e.button+" "+e.pageX+","+e.pageY;
+        }
         const spanningClick = isSpanningClick(e,estado);
 
         if(!spanningClick && events.onClick)
@@ -313,6 +323,20 @@ const ZoomableCanvas = (props) => {
             return events.onClick(e,estado);
         }
     };
+
+    const onMouseLeave = (e,estado) => {
+        const mouse = getMouse(e,estado);
+        mesclarEstado(estado,{mouse:mouse});
+
+        if(events.onMouseLeave) return events.onMouseLeave(e,estado);
+    }
+
+    const onMouseEnter = (e,estado) => {
+        const mouse = getMouse(e,estado);
+        mesclarEstado(estado,{mouse:mouse});
+
+        if(events.onMouseEnter) return events.onMouseEnter(e,estado);
+    }
 
     // Não é o jeito certo? idaí?
     const myGetInitialState = (estado) => {
@@ -338,7 +362,9 @@ const ZoomableCanvas = (props) => {
         onMouseUp:onMouseUp,
         onWheel:onWheel,
         doZoom:doZoom,
-        onClick:onClick
+        onClick:onClick,
+        onMouseLeave: onMouseLeave,
+        onMouseEnter: onMouseEnter
     };
 
     for (const k in events) {
@@ -349,6 +375,7 @@ const ZoomableCanvas = (props) => {
     draw={mydraw}
     everyFrame={everyFrame}
     getInitialState={myGetInitialState}
+    onPropsChange={onPropsChange}
     events={myListeners}
     options={options} />;
     
