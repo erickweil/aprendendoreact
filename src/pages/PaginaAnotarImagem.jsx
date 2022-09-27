@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 const PaginaAnotarImagem = () => {
 
-    const [files, setFiles] = useState(["folha_de_saopaulo06091996.png"]);
+    const [files, setFiles] = useState(["../folha_de_saopaulo06091996.png"]);
     const [options, setOptions] = useState({
         DEBUG:false,
         interactionStyle:"drag"

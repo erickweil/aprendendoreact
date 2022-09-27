@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/aprendendoreact/static/css/main.1db052b5.css",
-    "main.js": "/aprendendoreact/static/js/main.4e0648a5.js",
+    "main.js": "/aprendendoreact/static/js/main.ef93e7ae.js",
     "static/js/787.a67f0fff.chunk.js": "/aprendendoreact/static/js/787.a67f0fff.chunk.js",
     "index.html": "/aprendendoreact/index.html",
     "main.1db052b5.css.map": "/aprendendoreact/static/css/main.1db052b5.css.map",
-    "main.4e0648a5.js.map": "/aprendendoreact/static/js/main.4e0648a5.js.map",
+    "main.ef93e7ae.js.map": "/aprendendoreact/static/js/main.ef93e7ae.js.map",
     "787.a67f0fff.chunk.js.map": "/aprendendoreact/static/js/787.a67f0fff.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1db052b5.css",
-    "static/js/main.4e0648a5.js"
+    "static/js/main.ef93e7ae.js"
   ]
 }
