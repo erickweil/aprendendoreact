@@ -25,7 +25,7 @@ const AnotarImagem = (props) => {
         colorActivePoint: "rgba(255, 255, 0, 1.0)",
         minDist: 1, // Distância mínima em pixels que irá aceitar entre pontos. afeta a criação e edição de formatos
         minArea: 100, // Area mínima em pixels de um objeto
-        minClickDist: 32, // Distância mínima EM SCREEN COORDINATES para entender que clicou em um ponto
+        minClickDist: 20, // Distância mínima EM SCREEN COORDINATES para entender que clicou em um ponto
         spanSpeed: 15
     };
     const options = props.options ? {...defaultOptions,...props.options} : defaultOptions;
@@ -112,18 +112,12 @@ const AnotarImagem = (props) => {
                 {
                     const points = e.getPoints(e);
                     ctx.fillStyle = estado.arrastando ? options.colorActivePoint : options.colorPoint;
-                    drawPoints(ctx,e.getPoints(e),pointRadius,scale);                    
+                    drawPoints(ctx,points,pointRadius,scale);                    
                     
                     if(estado.editandoPonto != -1)
                     {
                         ctx.fillStyle = options.colorActivePoint;
 
-                        if(e.type == "rect" && estado.editandoPonto >= 4)
-                        {
-                            // destacar os dois pontos que fazem parte da linha sendo editada
-                            drawPoints(ctx,[points[estado.editandoPonto%4],points[(estado.editandoPonto+1)%4]],pointRadius,scale);
-                        }
-                        else
                         drawPoints(ctx,[points[estado.editandoPonto]],pointRadius,scale);
                     }
                 }
@@ -189,6 +183,7 @@ const AnotarImagem = (props) => {
         return {
             desenhando:false,
             desenhandoCliques: 0,
+            posicaoAnterior: {x:0,y:0},
             selecionado: false
         };
     }
@@ -222,6 +217,7 @@ const AnotarImagem = (props) => {
         return {
             desenhando:elem,
             desenhandoCliques: 0, // reseta o número de cliques
+            posicaoAnterior: {x:posicao.x,y:posicao.y},
             selecionado: false
         };
     }
@@ -238,8 +234,8 @@ const AnotarImagem = (props) => {
             // Calcula o ponto mais próximo no formato, retorna a distância ao quadrado
             const [minP,minSqrDist] = pontoMaisProximo(points,posicao,points.length-1);
 
-            
-            if(Math.sqrt(minSqrDist)*scale < options.minClickDist)
+            const minDistScaled = Math.sqrt(minSqrDist)*scale;
+            if(minDistScaled < options.minClickDist)
             {
                 // Se clicou no primeiro ponto, termine o desenho
                 if(minP == 0)
@@ -257,16 +253,20 @@ const AnotarImagem = (props) => {
                     return {
                         desenhando:false,
                         desenhandoCliques: 0,
+                        posicaoAnterior: {x:0,y:0},
                         elementos:elementos,
                         selecionado: false
                     };
                 }
-                // se clicou em outro ponto ignore
-                return {
-                    desenhando:elem,
-                    desenhandoCliques: ncliques+1, // registra que um novo clique foi realizado
-                    selecionado: false
-                };
+                // se clicou em outro ponto ignore se for muito perto (Dependendo do tamanho que pontos são desenhados)
+                if(minDistScaled < options.pointRadius * 2.5)
+                {
+                    return {
+                        desenhando:elem,
+                        desenhandoCliques: ncliques+1, // registra que um novo clique foi realizado
+                        selecionado: false
+                    };
+                }
             }
 
             elem.addPoint(elem,-1,{x:posicao.x+options.minDist*2,y:posicao.y+options.minDist*2},options.minDist);
@@ -275,6 +275,7 @@ const AnotarImagem = (props) => {
         return {
             desenhando:elem,
             desenhandoCliques: ncliques+1, // registra que um novo clique foi realizado
+            posicaoAnterior: {x:posicao.x,y:posicao.y},
             selecionado: false
         };
     }
@@ -306,10 +307,15 @@ const AnotarImagem = (props) => {
         // está multiplicando pela escala para que compare idependente do zoom
         if(minP != -1 && Math.sqrt(minSqrDist)*scale < options.minClickDist)
         {
-            const posicaoAnterior = {x:points[minP].x, y:points[minP].y};
+            let posicaoAnterior = false;
+            if(elem.type == "rect")
+                posicaoAnterior = {x:points[minP%4].x, y:points[minP%4].y};
+            else
+                posicaoAnterior = {x:points[minP].x, y:points[minP].y};
+
             const mouseClickOff = {x:posicao.x - posicaoAnterior.x,y:posicao.y - posicaoAnterior.y};
             const retEstado = editandoPontoMover(elem,minP,posicao,posicaoAnterior,mouseClickOff);
-            
+
             return {...retEstado,...{
                 editandoPonto: minP,
                 desenhandoCliques: 0,
@@ -333,19 +339,6 @@ const AnotarImagem = (props) => {
                     desenhandoCliques: 0,
                     posicaoAnterior: posicaoAnterior,
                     mouseClickOff: {x:0,y:0}
-                };
-            }
-            // Redimensionar Retângulo clicando na linha
-            else if(elem.type == "rect")
-            {
-                const posicaoAnterior = {x:points[minLinha].x,y:points[minLinha].y};
-                const mouseClickOff = {x:posicao.x - posicaoAnterior.x,y:posicao.y - posicaoAnterior.y};
-            
-                return {
-                    editandoPonto: minLinha + 4,
-                    desenhandoCliques: 0,
-                    posicaoAnterior: posicaoAnterior,
-                    mouseClickOff: mouseClickOff
                 };
             }
         }
@@ -514,8 +507,54 @@ const AnotarImagem = (props) => {
      * =================================================================
      */
 
+    // Prender a posição ao eixo mais próximo
+    const axisSnap = (e,estado) => {
+        const posicao = estado.mouse;
+
+        if(e.altKey)
+        {
+            const posicaoAnterior = estado.posicaoAnterior;
+            const mouseClickOff = estado.mouseClickOff;
+
+            const prevMouse = {
+                x: posicaoAnterior.x+mouseClickOff.x,
+                y: posicaoAnterior.y+mouseClickOff.y
+            }
+
+            const diffx = Math.abs(posicao.x - prevMouse.x);
+            const diffy = Math.abs(posicao.y - prevMouse.y);
+
+            // Se apertar alt enquanto desenha um retângulo, deixa ele quadrado
+            if(estado.desenhando && estado.desenhando.type == "rect")
+            {
+                if(diffx > diffy) return {
+                    x:posicao.x,
+                    y:prevMouse.y + diffx * Math.sign(posicao.y - prevMouse.y)
+                }
+                else return {
+                    x:prevMouse.x + diffy * Math.sign(posicao.x - prevMouse.x),
+                    y:posicao.y
+                }
+            }
+            else // Se apertar alt enquanto edita um ponto, alinha ao eixo mais próximo
+            {
+                // mover no eixo X apenas
+                if(diffx > diffy) return {
+                    x:posicao.x,
+                    y:prevMouse.y
+                }
+                else return {
+                    x:prevMouse.x,
+                    y:posicao.y
+                }
+            }
+        }
+        else return posicao;
+    }
+
     const onMouseDown = (e,estado) =>
     {
+        const posMouse = axisSnap(e,estado);
         //console.log("onMouseDown:"+e.button);
         if(e.button == 0) // Clicou o botão esquerdo
         {
@@ -529,22 +568,22 @@ const AnotarImagem = (props) => {
             }
             else if(estado.desenhando) // Há halgo sendo desenhando
             {
-                return desenhandoClique(estado.elementos,estado.desenhando,estado.mouse,estado.desenhandoCliques,estado.scale);
+                return desenhandoClique(estado.elementos,estado.desenhando,posMouse,estado.desenhandoCliques,estado.scale);
             }
             else // Não há nada sendo desenhando nem editado no momento
             {
                 // Tem um selecionado e clicou
                 if(estado.selecionado)
                 {
-                    const estadoModificado = selecionadoClique(estado.selecionado,estado.mouse,estado.scale);
+                    const estadoModificado = selecionadoClique(estado.selecionado,posMouse,estado.scale);
                     if(estadoModificado) return estadoModificado;
                 }
 
-                const elemClicado = encontrarElemento(estado.elementos,estado.mouse);
+                const elemClicado = encontrarElemento(estado.elementos,posMouse);
 
                 if(!elemClicado && !estado.selecionado)
                 {
-                    return desenhandoNovo(estado.ferramenta,estado.mouse);
+                    return desenhandoNovo(estado.ferramenta,posMouse);
                 }
                 else
                 {
@@ -560,6 +599,8 @@ const AnotarImagem = (props) => {
     const onMouseMove = (e,estado) =>
     {
         const mouse = estado.mouse;
+
+        const posMouse = axisSnap(e,estado);
         // Se deve movimentar o que está sendo desenhado
         // Quando é interação 'click', irá mover mesmo sem estar clicado o mouse
         // Quando é interação 'drag', só irá mover enquanto estiver clicado o botão esquerdo do mouse
@@ -568,38 +609,39 @@ const AnotarImagem = (props) => {
         if(estado.selecionado && estado.editandoPonto != -1)
         {
             if(shouldMove)
-            return editandoPontoMover(estado.selecionado,estado.editandoPonto,estado.mouse,estado.posicaoAnterior,estado.mouseClickOff);
+            return editandoPontoMover(estado.selecionado,estado.editandoPonto,posMouse,estado.posicaoAnterior,estado.mouseClickOff);
         }
         if(estado.selecionado && estado.arrastando)
         {
             if(shouldMove)
-            return arrastandoMover(estado.selecionado,estado.mouse,estado.mouseClickOff);
+            return arrastandoMover(estado.selecionado,posMouse,estado.mouseClickOff);
         }
         else if(estado.desenhando) // Há algo sendo desenhando
         {
             // if(shouldMove) Desenhar polígono é sempre modo interação click.
-            return desenhandoMover(estado.desenhando,mouse);
+            return desenhandoMover(estado.desenhando,posMouse);
         }
     };
 
     const onMouseUp = (e,estado) =>
     {
+        const posMouse = axisSnap(e,estado);
         //console.log("onMouseUp:"+e.button);
         if(e.button == 0 && options.interactionStyle == "drag")
         {
             if(estado.selecionado && estado.editandoPonto != -1)
             {
-                mesclarEstado(estado,editandoPontoMover(estado.selecionado,estado.editandoPonto,estado.mouse,estado.posicaoAnterior,estado.mouseClickOff));
+                mesclarEstado(estado,editandoPontoMover(estado.selecionado,estado.editandoPonto,posMouse,estado.posicaoAnterior,estado.mouseClickOff));
                 return editandoPontoConfirmar(estado.selecionado,estado.editandoPonto);
             }
             else if(estado.selecionado && estado.arrastando) // Soltou o botão esquerdo do mouse e estava desenhando um retângulo
             {
-                mesclarEstado(estado,arrastandoMover(estado.selecionado,estado.mouse,estado.mouseClickOff));
+                mesclarEstado(estado,arrastandoMover(estado.selecionado,posMouse,estado.mouseClickOff));
                 return arrastandoConfirmar(estado.selecionado);
             }
             else if(estado.desenhando && estado.desenhando.type == "rect") // Soltou o botão esquerdo do mouse e estava desenhando um retângulo
             {
-                mesclarEstado(estado,desenhandoMover(estado.desenhando,estado.mouse));
+                mesclarEstado(estado,desenhandoMover(estado.desenhando,posMouse));
                 return desenhandoConfirmar(estado.elementos,estado.desenhando);
             }
         }
@@ -609,6 +651,7 @@ const AnotarImagem = (props) => {
     // o onClick é enviado após um onMouseDown e um onMouseUp ter sido enviado.
     const onClick = (e,estado) =>
     {
+        const posMouse = axisSnap(e,estado);
         //console.log("onClick:"+e.button);
         if(estado.selecionado)//&& (estado.editandoPonto != -1 || estado.arrastando))
         {
@@ -617,12 +660,12 @@ const AnotarImagem = (props) => {
             {
                 if(estado.arrastando && e.button == 0 && estado.desenhandoCliques >= 1)
                 {
-                    mesclarEstado(estado,arrastandoMover(estado.selecionado,estado.mouse,estado.mouseClickOff));
+                    mesclarEstado(estado,arrastandoMover(estado.selecionado,posMouse,estado.mouseClickOff));
                     return arrastandoConfirmar(estado.selecionado);
                 }
                 else if(estado.editandoPonto != -1 && e.button == 0 && estado.desenhandoCliques >= 1)   //  foi clicado o botão esquerdo
                 {
-                    mesclarEstado(estado,editandoPontoMover(elem,estado.editandoPonto,estado.mouse,estado.posicaoAnterior,estado.mouseClickOff));
+                    mesclarEstado(estado,editandoPontoMover(elem,estado.editandoPonto,posMouse,estado.posicaoAnterior,estado.mouseClickOff));
                     return editandoPontoConfirmar(elem,estado.editandoPonto);
                 }
             }
@@ -632,7 +675,7 @@ const AnotarImagem = (props) => {
                 ((options.delButton == "right" && e.button == 2) || (options.delButton == "middle" && e.button == 1))
             )
             {
-                return editandoPontoDeletar(elem,estado.mouse,estado.scale);
+                return editandoPontoDeletar(elem,posMouse,estado.scale);
             }
         }
         else if(estado.desenhando) // Está desenhando algo e...
@@ -644,7 +687,7 @@ const AnotarImagem = (props) => {
                 || (elem.type == "rect" && e.button == 0 
                     && estado.desenhandoCliques >= 1    ))   // 2. OU É um retângulo e foi clicado o botão esquerdo
                 {
-                    mesclarEstado(estado,desenhandoMover(estado.desenhando,estado.mouse));
+                    mesclarEstado(estado,desenhandoMover(estado.desenhando,posMouse));
                     return desenhandoConfirmar(estado.elementos,elem);
                 }
             }
@@ -652,7 +695,7 @@ const AnotarImagem = (props) => {
             {
                 if((elem.type == "poly" && e.button == 2 ))   // É um polígono e foi clicado o botão direito
                 {
-                    mesclarEstado(estado,desenhandoMover(estado.desenhando,estado.mouse));
+                    mesclarEstado(estado,desenhandoMover(estado.desenhando,posMouse));
                     return desenhandoConfirmar(estado.elementos,elem);
                 }
             }

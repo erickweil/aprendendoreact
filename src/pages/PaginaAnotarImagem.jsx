@@ -7,7 +7,7 @@ const PaginaAnotarImagem = () => {
 
     const [files, setFiles] = useState(["folha_de_saopaulo06091996.png"]);
     const [options, setOptions] = useState({
-        DEBUG:true,
+        DEBUG:false,
         interactionStyle:"drag"
     });
 

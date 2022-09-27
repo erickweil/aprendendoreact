@@ -53,22 +53,52 @@
         - Arrastar o elemento
 
 ### A fazer
-- Escolher imagem 
-- Importar/Exportar anotações
-- Outras formas: Elipse, Círculo, Ponto?
-- Barra de ferramentas
-- Selecionar vários elementos com shift
-- Duplicar, Ctrl+c Ctrl+v
-- Anotações por imagem
-- Exibir cursor correto de acordo com ação
-- Impedir que desenhe fora da área da imagem
-- Informações que auxiliam utilização ao passar o mouse por cima
-- Barra de rolagem na tela
-- Mensagens de status da ação
-- Possibilitar campos de texto em cada formato
-- Categorias com cores
-- Hierarquia/Lista dos elementos criados
+- UI
+  - Escolher imagem 
+  - Barra de ferramentas
+  - Hierarquia/Lista dos elementos criados
+  - Mensagens de status da ação
+  - Importar/Exportar anotações em json
+  - Categorias e Atributos
+- Várias Imagens
+  - Anotações por imagem
+- Edição
+  - Outras formas: Elipse, Círculo, Ponto, Polyline (Polígono aberto), Spline, Segmentação
+  - Selecionar vários elementos com shift
+  - Duplicar, Ctrl+c Ctrl+v
+  - Exibir cursor correto de acordo com ação
+  - Informações que auxiliam utilização ao passar o mouse por cima
+  - Possibilitar campos de texto em cada formato
+  - Alinhar o movimento com os eixos X ou Y se segurar ALT
+  - Ctrl+z infinito
+  - Camadas, ver/esconder anotações baseado em alguma característica
+- Navegação no Canvas
+  - Barra de rolagem na tela
+  - Impedir que desenhe fora da área da imagem
 
-NÃO Mover Seleção pixel a pixel com setas
-OK Previnir formatos com área 0 ou próxima disso
-OK Corrigir edição de retângulo para ser mais intuitivo
+<hr>
+Coisas que não serão feitas
+
+- NÃO Mover Seleção pixel a pixel com setas, usar setas para mover câmera
+
+## Outros anotadores
+
+- VGG Image Annotator https://www.robots.ox.ac.uk/~vgg/software/via/
+
+- Make Sense https://www.makesense.ai/
+  - bounding box, point, line, polygon
+
+- DLabel https://dlabel.org
+  - bounding box, polygon, spline, graph (polyline?)
+  - multiple users annotate the same frame
+
+- Super Annotate https://app.superannotate.com
+  - Bounding box, polygon, polyline, points, ellipse, cuboid
+  
+- FREE CVAT https://cvat.org
+  - bounding box, polygon, polyline, points, cuboid
+
+- Labelbox https://editor.labelbox.com
+  - bounding box, polygon, polyline, points, segmentation
+
+segmentation: selecionar área da imagem baseado em análise de contraste/cores/linhas (Tipo a varinha mágica do Paint.NET)

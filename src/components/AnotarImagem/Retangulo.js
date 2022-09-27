@@ -47,8 +47,20 @@ import { colisaoRect } from "./geometria";
         ctx.strokeRect(ret.pos.x, ret.pos.y, ret.width, ret.height);
     };
 
+    const median = (a,b) => {
+        return {
+            x: (a.x + b.x)/2.0,
+            y: (a.y + b.y)/2.0
+        }
+    }
+
     const getRectPoints = (ret) => {
-        return ret.points;
+        return ret.points.concat([
+            median(ret.points[0],ret.points[1]),
+            median(ret.points[1],ret.points[2]),
+            median(ret.points[2],ret.points[3]),
+            median(ret.points[3],ret.points[0])
+        ]);
     };
 
     const editRectPoint = (ret,ponto,posicao, mergeDist) => {
