@@ -13,6 +13,7 @@ import PaginaAnotarImagem from './pages/PaginaAnotarImagem';
 import Redirecionar from './pages/Redirecionar';
 import Inicio from "./pages/Inicio";
 import Ops from "./pages/Ops";
+import QrCode from './pages/QrCode';
 
 export default function App() {
 
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="paginacao" element={<Paginacao />} />
           <Route path="formulario" element={<Formulario />} />
           <Route path="anotarimagem" element={<PaginaAnotarImagem />} />
+          <Route path="qrcode" element={<QrCode />} />
           <Route path="*" element={<Ops />} />
         </Route>
       </Routes>

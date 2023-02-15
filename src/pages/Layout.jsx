@@ -24,6 +24,9 @@ const Layout = () => {
           <li className="col right">
             <Link to="/anotarimagem">Anotar Imagem</Link>
           </li>
+          <li className="col right">
+            <Link to="/qrcode">QR Code</Link>
+          </li>
         </ul>
       </nav>
 
