@@ -2,7 +2,7 @@
 
 ## Anotar Imagem
 
-[https://kcire.fslab.dev/aprendendoreact/anotarimagem/](https://kcire.fslab.dev/aprendendoreact/anotarimagem/)
+[https://erick.fslab.dev/aprendendoreact/](https://erick.fslab.dev/aprendendoreact/)
 
 ### Controles:
 - Navegação
