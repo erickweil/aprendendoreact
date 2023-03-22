@@ -40,13 +40,14 @@ const Paginacao = () => {
 
     return (
         <LayoutTituloConteudo  titulo="Listagem com paginação" >
-
+            <div style={{maxHeight:"80vh",overflowY:"auto"}}>
             <ItemAdapter 
                 getItems={getItems} 
                 layout={ItemParagrafo} 
                 maxPaginas={7} 
                 itemsPorPagina={20} 
             />
+            </div>
         </LayoutTituloConteudo>
     );
 };
